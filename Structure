@@ -1,0 +1,81 @@
+supportmind-ai/
+│
+├── README.md
+├── .gitignore
+├── .env.example
+├── docker-compose.yml
+├── Dockerfile
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── frontend/
+│   ├── package.json
+│   ├── next.config.js
+│   ├── tailwind.config.js
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── login/
+│   │   │   ├── dashboard/
+│   │   │   └── chat/
+│   │   ├── components/
+│   │   ├── services/
+│   │   ├── hooks/
+│   │   └── styles/
+│   └── public/
+│
+├── backend/
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── src/
+│   │   ├── main.ts
+│   │   ├── app.module.ts
+│   │
+│   │   ├── auth/
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.service.ts
+│   │   │   └── jwt.strategy.ts
+│   │   │
+│   │   ├── users/
+│   │   │   ├── user.entity.ts
+│   │   │   ├── users.controller.ts
+│   │   │   └── users.service.ts
+│   │   │
+│   │   ├── companies/
+│   │   │   ├── company.entity.ts
+│   │   │   ├── companies.service.ts
+│   │   │   └── companies.controller.ts
+│   │   │
+│   │   ├── tickets/
+│   │   │   ├── ticket.entity.ts
+│   │   │   ├── tickets.controller.ts
+│   │   │   └── tickets.service.ts
+│   │   │
+│   │   ├── ai/
+│   │   │   ├── ai.controller.ts
+│   │   │   ├── ai.service.ts
+│   │   │   ├── prompt.builder.ts
+│   │   │   ├── openai.service.ts
+│   │   │   └── rag.service.ts
+│   │   │
+│   │   ├── documents/
+│   │   │   ├── document.entity.ts
+│   │   │   └── documents.service.ts
+│   │   │
+│   │   ├── common/
+│   │   │   ├── guards/
+│   │   │   ├── decorators/
+│   │   │   ├── filters/
+│   │   │   └── utils/
+│   │   │
+│   │   └── config/
+│   │       ├── database.config.ts
+│   │       └── openai.config.ts
+│   │
+│   └── test/
+│
+└── docs/
+    ├── architecture.md
+    ├── diagrams/
+    └── api.md
