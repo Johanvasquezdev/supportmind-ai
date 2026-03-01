@@ -163,7 +163,7 @@ Está diseñado como un **proyecto de portafolio profesional**, ideal para roles
 ## 👤 Autor
 
 **Johan Gabriel Vásquez Camacho**  
-Estudiante de Desarrollo de Software | Backend & IA  
+Estudiante de Desarrollo de Software | ITLA
 
 ---
 
