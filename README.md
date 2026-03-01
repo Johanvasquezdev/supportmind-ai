@@ -2,7 +2,7 @@
 B2B SaaS – AI-powered support assistant 
 
 
-# SupportMind AI 🚀
+# SupportMind AI 🆘🧠
 
 **SupportMind AI** es una **plataforma B2B SaaS impulsada por Inteligencia Artificial**, diseñada para ayudar a las empresas a **automatizar y optimizar sus procesos de soporte al cliente** utilizando técnicas modernas de IA como **LLMs, RAG (Retrieval-Augmented Generation)** y una **arquitectura backend escalable**.
 
@@ -37,7 +37,7 @@ SupportMind AI ofrece un **asistente de soporte impulsado por IA** que:
 
 ---
 
-## 🏗️ Visión general de la arquitectura
+## 👁️ Visión general de la arquitectura
 
 Frontend (Next.js)
 ↓
