@@ -163,10 +163,4 @@ Está diseñado como un **proyecto de portafolio profesional**, ideal para roles
 ## 👤 Autor
 
 **Johan Gabriel Vásquez Camacho**  
-Estudiante de Desarrollo de Software | ITLA
-
----
-
-## 📜 Licencia
-
-MIT License
+Estudiante de Desarrollo de Software 
