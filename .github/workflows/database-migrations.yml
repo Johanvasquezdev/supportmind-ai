@@ -1,0 +1,51 @@
+name: Database Migrations
+
+on:
+  push:
+    paths:
+      - 'backend/prisma/**'
+    branches: [ main, develop ]
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Generate Prisma Client
+      working-directory: ./backend
+      run: npx prisma generate
+
+    - name: Run database migrations
+      working-directory: ./backend
+      run: |
+        npx prisma migrate deploy
+        npx prisma db seed || true
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    - name: Reset database for staging
+      if: github.ref == 'refs/heads/develop'
+      working-directory: ./backend
+      run: |
+        npx prisma migrate reset --force
+        npx prisma migrate deploy
+        npx prisma db seed || true
+      env:
+        DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

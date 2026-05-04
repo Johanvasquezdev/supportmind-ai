@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  apiKey    String   @unique
+  createdAt DateTime @default(now())
+
+  users         User[]
+  documents     Document[]
+  conversations Conversation[]
+  usage         Usage[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?
+  tenantId  String
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+model Document {
+  id        String         @id @default(uuid())
+  tenantId  String
+  title     String?
+  content   String
+  status    DocumentStatus @default(PENDING)
+  errorMsg  String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id])
+  chunks DocumentChunk[]
+
+  @@index([tenantId])
+}
+
+model DocumentChunk {
+  id         String   @id @default(uuid())
+  tenantId   String
+  documentId String
+  chunkIndex Int
+  text       String
+  vectorId   String
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([documentId])
+  @@unique([documentId, chunkIndex])
+  @@unique([vectorId])
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  messages Message[]
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  tenantId       String
+  conversationId String
+  role           String
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+
+  @@index([tenantId])
+  @@index([conversationId])
+}
+
+model Usage {
+  id           String   @id @default(uuid())
+  tenantId     String
+  inputTokens  Int
+  outputTokens Int
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}

@@ -1,0 +1,67 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for SonarCloud
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Run backend linting and formatting
+      working-directory: ./backend
+      run: |
+        npm run lint
+        npm run format:check
+
+    - name: Run frontend linting and formatting
+      working-directory: ./frontend
+      run: |
+        npm run lint
+        npm run format:check
+
+    - name: Type checking
+      run: |
+        cd backend && npm run type-check || true
+        cd ../frontend && npm run type-check || true
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  dependency-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run dependency check
+      run: |
+        echo "Checking for security vulnerabilities..."
+        cd backend && npm audit --audit-level=moderate || true
+        cd ../frontend && npm audit --audit-level=moderate || true
