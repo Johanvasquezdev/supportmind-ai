@@ -4,10 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { IngestionService } from './ingestion/ingestion.service';
-import { VectorService } from './ingestion/vector.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentResponseDto } from './dto/document-response.dto';
+import { IngestionService } from './ingestion/ingestion.service';
 
 @Injectable()
 export class DocumentsService {
@@ -16,7 +15,6 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ingestion: IngestionService,
-    private readonly vectorService: VectorService,
   ) {}
 
   // ─── Create ───────────────────────────────────────────────────────────────
@@ -56,9 +54,62 @@ export class DocumentsService {
   // ─── Delete ───────────────────────────────────────────────────────────────
 
   async remove(tenantId: string, id: string): Promise<void> {
-    await this.findOne(tenantId, id); // asserts ownership
-    await this.vectorService.deleteByDocument(tenantId, id);
-    await this.prisma.document.delete({ where: { id } });
+    // Atomic tenant-scoped delete: find + delete in one query.
+    // If the document doesn't exist or belongs to another tenant, deleteMany
+    // returns count 0 — no data is leaked and no race condition is possible.
+    await this.ingestion.removeDocumentVectors(tenantId, id);
+    const { count } = await this.prisma.document.deleteMany({
+      where: { id, tenantId },
+    });
+    if (count === 0) {
+      throw new NotFoundException('Document not found');
+    }
     // DocumentChunk rows cascade from the Prisma relation.
+  }
+
+  // ─── Status transitions (called by IngestionService) ──────────────────────
+
+  async setStatus(
+    tenantId: string,
+    documentId: string,
+    status: 'PROCESSING' | 'READY',
+  ): Promise<void> {
+    const { count } = await this.prisma.document.updateMany({
+      where: { id: documentId, tenantId },
+      data: { status },
+    });
+    if (count === 0) {
+      this.logger.error(
+        `setStatus failed: document ${documentId} not found for tenant ${tenantId}`,
+      );
+    }
+  }
+
+  async markFailed(
+    tenantId: string,
+    documentId: string,
+    errorMsg: string,
+  ): Promise<void> {
+    const { count } = await this.prisma.document.updateMany({
+      where: { id: documentId, tenantId },
+      data: { status: 'FAILED', errorMsg },
+    });
+    if (count === 0) {
+      this.logger.error(
+        `markFailed failed: document ${documentId} not found for tenant ${tenantId}`,
+      );
+    }
+  }
+
+  async persistChunks(
+    chunks: {
+      tenantId: string;
+      documentId: string;
+      chunkIndex: number;
+      text: string;
+      vectorId: string;
+    }[],
+  ): Promise<void> {
+    await this.prisma.documentChunk.createMany({ data: chunks });
   }
 }

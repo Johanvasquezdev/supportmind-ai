@@ -40,7 +40,8 @@ export class EmbeddingService {
       apiKey: this.config.getOrThrow<string>('OPENAI_API_KEY'),
     });
     this.model = this.config.get<string>('EMBEDDING_MODEL') ?? DEFAULT_MODEL;
-    this.dimensions = this.config.get<number>('EMBEDDING_DIMENSIONS') ?? DEFAULT_DIMENSIONS;
+    const envDim = this.config.get('EMBEDDING_DIMENSIONS');
+    this.dimensions = envDim ? parseInt(String(envDim), 10) : DEFAULT_DIMENSIONS;
   }
 
   // ─── Public API ──────────────────────────────────────────────────────────

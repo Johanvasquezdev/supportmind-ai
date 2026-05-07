@@ -19,12 +19,15 @@ export function Security() {
         />
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {items.map(({ Icon, title, text }) => (
-            <article key={title} className="rounded-2xl border border-border bg-card/70 p-8 text-center">
-              <div className="mx-auto mb-8 flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600">
+            <article 
+              key={title} 
+              className="group rounded-2xl border border-border bg-card/70 p-8 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-purple-500/10 hover:border-purple-500/30 cursor-default"
+            >
+              <div className="mx-auto mb-8 flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-md shadow-blue-500/20">
                 <Icon className="size-7 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground">{title}</h3>
-              <p className="mt-4 text-muted-foreground">{text}</p>
+              <h3 className="text-xl font-semibold text-foreground transition-colors duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-purple-400">{title}</h3>
+              <p className="mt-4 text-muted-foreground transition-colors duration-300 group-hover:text-foreground/80">{text}</p>
             </article>
           ))}
         </div>

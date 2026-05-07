@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { ChunkingService, Chunk } from './chunking.service';
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
+import { ChunkingService, Chunk, ChunkingOptions } from './chunking.service';
 import { EmbeddingService, EmbeddingResult } from './embedding.service';
 import { VectorRecord, VectorService } from './vector.service';
+import { DocumentsService } from '../documents.service';
 
 /**
  * Represents a single chunk after embedding — the enriched object
@@ -29,12 +29,29 @@ export interface EmbeddedChunk {
   dimensions: number;
 }
 
+/**
+ * Chunking configuration for the ingestion pipeline.
+ *
+ * - **500–1000 tokens**: Large enough for a full paragraph/policy, small
+ *   enough to produce focused embedding vectors.
+ * - **150 tokens overlap**: Ensures sentences near chunk boundaries appear
+ *   in full in at least one chunk, preventing "boundary blindness" where
+ *   a question about content at the edge gets weak matches from both
+ *   adjacent chunks.
+ */
+const INGESTION_CHUNK_OPTIONS: ChunkingOptions = {
+  minTokens: 500,
+  maxTokens: 1000,
+  overlapTokens: 150,
+};
+
 @Injectable()
 export class IngestionService {
   private readonly logger = new Logger(IngestionService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => DocumentsService))
+    private readonly documentsService: DocumentsService,
     private readonly chunking: ChunkingService,
     private readonly embedding: EmbeddingService,
     private readonly vectorService: VectorService,
@@ -44,14 +61,15 @@ export class IngestionService {
    * Full ingestion pipeline:
    *   content → chunks → embeddings → vector store + DB
    *
-   * Owns all status transitions. Called fire-and-forget from DocumentsService.
+   * Orchestrates chunking + embedding + vector storage.
+   * Delegates all DB operations back to DocumentsService.
    */
   async ingest(documentId: string, tenantId: string, content: string): Promise<void> {
     try {
-      await this.setStatus(documentId, 'PROCESSING');
+      await this.documentsService.setStatus(tenantId, documentId, 'PROCESSING');
 
-      // 1. Split into sentence-aware, overlapping chunks
-      const chunks: Chunk[] = this.chunking.chunk(content);
+      // 1. Split into sentence-aware, section-respecting, overlapping chunks
+      const chunks: Chunk[] = this.chunking.chunk(content, INGESTION_CHUNK_OPTIONS);
       this.logger.log(
         `[${documentId}] ${chunks.length} chunks ` +
           `(avg ~${Math.round(chunks.reduce((s, c) => s + c.tokenEstimate, 0) / (chunks.length || 1))} tokens/chunk)`,
@@ -59,7 +77,7 @@ export class IngestionService {
 
       if (chunks.length === 0) {
         this.logger.warn(`[${documentId}] No chunks produced — marking READY with empty content`);
-        await this.setStatus(documentId, 'READY');
+        await this.documentsService.setStatus(tenantId, documentId, 'READY');
         return;
       }
 
@@ -75,7 +93,7 @@ export class IngestionService {
       const vectorRecords = this.toVectorRecords(embeddedChunks);
       await this.vectorService.upsert(vectorRecords);
 
-      // 4. Persist to relational DB
+      // 4. Persist chunk metadata to relational DB (via DocumentsService)
       const chunkRows = embeddedChunks.map((ec) => ({
         tenantId: ec.tenantId,
         documentId: ec.documentId,
@@ -83,18 +101,23 @@ export class IngestionService {
         text: ec.text,
         vectorId: ec.vectorId,
       }));
-      await this.prisma.documentChunk.createMany({ data: chunkRows });
+      await this.documentsService.persistChunks(chunkRows);
 
-      await this.setStatus(documentId, 'READY');
+      await this.documentsService.setStatus(tenantId, documentId, 'READY');
       this.logger.log(`[${documentId}] ingestion complete — ${embeddedChunks.length} chunks persisted`);
     } catch (err) {
       this.logger.error(`[${documentId}] ingestion failed: ${err.message}`);
-      await this.prisma.document.update({
-        where: { id: documentId },
-        data: { status: 'FAILED', errorMsg: String(err.message) },
-      });
+      await this.documentsService.markFailed(tenantId, documentId, String(err.message));
       throw err;
     }
+  }
+
+  /**
+   * Removes all vectors associated with a document.
+   * Called by DocumentsService during document deletion.
+   */
+  async removeDocumentVectors(tenantId: string, documentId: string): Promise<void> {
+    await this.vectorService.deleteByDocument(tenantId, documentId);
   }
 
   // ─── Embedding step ────────────────────────────────────────────────────
@@ -121,7 +144,7 @@ export class IngestionService {
       tenantId,
       documentId,
       chunkIndex: chunk.index,
-      vectorId: `${documentId}-${chunk.index}`,
+      vectorId: `${tenantId}-${documentId}-${chunk.index}`,
       tokenEstimate: chunk.tokenEstimate,
       embeddingModel: embeddings[i].model,
       dimensions: embeddings[i].dimensions,
@@ -144,12 +167,5 @@ export class IngestionService {
         text: ec.text,
       },
     }));
-  }
-
-  private async setStatus(documentId: string, status: 'PROCESSING' | 'READY') {
-    await this.prisma.document.update({
-      where: { id: documentId },
-      data: { status },
-    });
   }
 }

@@ -1,11 +1,10 @@
 import { ConfigService } from '@nestjs/config';
 import { AiService } from './ai.service';
-import { PrismaService } from '../prisma/prisma.service';
 
 describe('AiService', () => {
   const context = [
     {
-      vectorId: 'doc-1-0',
+      vectorId: 'tenant-a-doc-1-0',
       score: 0.92,
       text: 'Refunds are available within 30 days.',
       metadata: {
@@ -18,15 +17,9 @@ describe('AiService', () => {
   ];
 
   let service: AiService;
-  let prisma: jest.Mocked<Pick<PrismaService, 'usage'>>;
   let createCompletion: jest.Mock;
 
   beforeEach(() => {
-    prisma = {
-      usage: {
-        create: jest.fn().mockResolvedValue({}),
-      },
-    } as unknown as jest.Mocked<Pick<PrismaService, 'usage'>>;
     createCompletion = jest.fn().mockResolvedValue({
       choices: [{ message: { content: 'You can request a refund within 30 days.' } }],
       usage: {
@@ -44,7 +37,6 @@ describe('AiService', () => {
         }),
         getOrThrow: jest.fn().mockReturnValue('test-openai-key'),
       } as unknown as ConfigService,
-      prisma as unknown as PrismaService,
     );
 
     (service as any).openai = {
@@ -56,9 +48,8 @@ describe('AiService', () => {
     };
   });
 
-  it('builds a grounded prompt, calls OpenAI, and tracks token usage', async () => {
+  it('builds a grounded prompt, calls OpenAI, and returns the response', async () => {
     const result = await service.generateResponse({
-      tenantId: 'tenant-a',
       message: 'Can I get a refund?',
       context,
       history: [{ role: 'user', content: 'Hi' }],
@@ -75,31 +66,26 @@ describe('AiService', () => {
           }),
           expect.objectContaining({
             role: 'system',
+            content: expect.stringContaining('Mode: answer.'),
+          }),
+          expect.objectContaining({
+            role: 'system',
             content: expect.stringContaining('Refunds are available within 30 days.'),
           }),
         ]),
       }),
     );
-    expect(prisma.usage.create).toHaveBeenCalledWith({
-      data: {
-        tenantId: 'tenant-a',
-        inputTokens: 101,
-        outputTokens: 12,
-      },
-    });
     expect(result.answer).toBe('You can request a refund within 30 days.');
     expect(result.usage.totalTokens).toBe(113);
   });
 
   it('refuses when no retrieved context is provided', async () => {
     const result = await service.generateResponse({
-      tenantId: 'tenant-a',
       message: 'What is your refund policy?',
       context: [],
     });
 
     expect(createCompletion).not.toHaveBeenCalled();
-    expect(prisma.usage.create).not.toHaveBeenCalled();
     expect(result.answer).toContain("don't have enough information");
   });
 

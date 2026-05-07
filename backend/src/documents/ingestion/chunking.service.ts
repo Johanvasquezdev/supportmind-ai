@@ -5,10 +5,20 @@ import { Injectable, Logger } from '@nestjs/common';
 // This heuristic avoids pulling in a full tiktoken dependency at runtime.
 const CHARS_PER_TOKEN = 4;
 
-// ─── Defaults (configurable per call) ────────────────────────────────────────
+// ─── Production defaults ─────────────────────────────────────────────────────
+// 500–1000 tokens is the sweet spot for RAG retrieval:
+//   - Large enough to contain a complete thought or policy paragraph
+//   - Small enough for the embedding model to produce a focused vector
+//   - Fits comfortably in a GPT-4o context window (even with 5 chunks)
 const DEFAULT_MIN_CHUNK_TOKENS = 500;
 const DEFAULT_MAX_CHUNK_TOKENS = 1000;
-const DEFAULT_OVERLAP_TOKENS = 100;
+
+// 150 tokens of overlap (~2–3 sentences) ensures that sentences near chunk
+// boundaries are fully represented in at least one chunk's embedding.
+// Without overlap, a question about content right at a boundary would
+// produce a weak match in both adjacent chunks instead of a strong match
+// in at least one.
+const DEFAULT_OVERLAP_TOKENS = 150;
 
 export interface ChunkingOptions {
   /** Minimum tokens per chunk — helps avoid tiny trailing fragments. */
@@ -38,39 +48,50 @@ export class ChunkingService {
    * Splits plain text into overlapping, sentence-aware chunks whose sizes
    * fall within [minTokens, maxTokens] (best-effort).
    *
-   * Algorithm
-   * ---------
-   * 1. Split the document into sentences.
-   * 2. Greedily accumulate sentences into a chunk until adding the next
-   *    sentence would exceed `maxTokens`.
-   * 3. Emit the chunk, then back up by `overlapTokens` worth of sentences
-   *    to start the next chunk — preserving cross-chunk context.
-   * 4. If a single sentence exceeds `maxTokens`, fall back to a hard
-   *    character split so no content is ever dropped.
+   * The algorithm preserves semantic meaning through three mechanisms:
+   *
+   * 1. **Section awareness** — Markdown headers (# / ## / ###) are treated
+   *    as hard boundaries. A new section always starts a new chunk, so
+   *    related content stays together.
+   *
+   * 2. **Sentence-level boundaries** — Within sections, the splitter never
+   *    cuts mid-sentence. It accumulates whole sentences until the chunk
+   *    fills up, then starts a new one.
+   *
+   * 3. **Overlap** — The last ~overlapTokens of each chunk are repeated at
+   *    the start of the next. This ensures sentences near boundaries are
+   *    fully captured by at least one chunk's embedding vector.
    */
   chunk(text: string, options: ChunkingOptions = {}): Chunk[] {
     const minTokens = options.minTokens ?? DEFAULT_MIN_CHUNK_TOKENS;
     const maxTokens = options.maxTokens ?? DEFAULT_MAX_CHUNK_TOKENS;
     const overlapTokens = options.overlapTokens ?? DEFAULT_OVERLAP_TOKENS;
 
-    const sentences = this.splitSentences(text);
-    if (sentences.length === 0) return [];
+    const segments = this.splitIntoSegments(text);
+    if (segments.length === 0) return [];
 
     const chunks: Chunk[] = [];
-    let cursor = 0; // index into sentences[]
+    let cursor = 0;
 
-    while (cursor < sentences.length) {
+    while (cursor < segments.length) {
       let chunkTokens = 0;
-      const chunkSentences: string[] = [];
-      let end = cursor; // will point past the last consumed sentence
+      const chunkSegments: string[] = [];
+      let end = cursor;
 
-      // ── Accumulate sentences up to maxTokens ──────────────────────────
-      while (end < sentences.length) {
-        const sentTokens = this.estimateTokens(sentences[end]);
+      // ── Accumulate segments up to maxTokens ──────────────────────────
+      while (end < segments.length) {
+        const seg = segments[end];
+        const segTokens = this.estimateTokens(seg);
 
-        // Single sentence exceeds limit → hard-split it
-        if (sentTokens > maxTokens && chunkSentences.length === 0) {
-          const hardChunks = this.hardSplit(sentences[end], maxTokens);
+        // A section header always starts a new chunk (unless the current
+        // chunk is empty — then we include it as the chunk opener).
+        if (this.isSectionHeader(seg) && chunkSegments.length > 0) {
+          break;
+        }
+
+        // Single segment exceeds limit → hard-split it
+        if (segTokens > maxTokens && chunkSegments.length === 0) {
+          const hardChunks = this.hardSplit(seg, maxTokens);
           for (const hc of hardChunks) {
             chunks.push({
               index: chunks.length,
@@ -82,32 +103,43 @@ export class ChunkingService {
           break;
         }
 
-        if (chunkTokens + sentTokens > maxTokens) break;
+        if (chunkTokens + segTokens > maxTokens) break;
 
-        chunkSentences.push(sentences[end]);
-        chunkTokens += sentTokens;
+        chunkSegments.push(seg);
+        chunkTokens += segTokens;
         end++;
       }
 
-      if (chunkSentences.length > 0) {
-        const chunkText = chunkSentences.join(' ').trim();
+      if (chunkSegments.length > 0) {
+        const chunkText = chunkSegments.join(' ').trim();
         if (chunkText.length > 0) {
           chunks.push({
             index: chunks.length,
             text: chunkText,
-            tokenEstimate: chunkTokens,
+            tokenEstimate: this.estimateTokens(chunkText),
           });
         }
       }
 
       // ── Advance cursor (with overlap) ─────────────────────────────────
-      // `end` is the index of the first unconsumed sentence.
       // Rewind from `end` to create overlap, but NEVER go back to `cursor`
       // or earlier — that would cause an infinite loop.
-      const overlapStart = this.rewindForOverlap(sentences, end, overlapTokens);
-      const nextCursor = Math.max(overlapStart, cursor + 1);
-      cursor = Math.min(nextCursor, end); // can't skip past unconsumed
-      // Final safety: if nothing advanced, force progress
+      //
+      // Skip overlap if the next segment is a section header — sections
+      // represent topic changes, so carrying context from the previous
+      // topic would hurt rather than help retrieval.
+      const nextIsSectionBreak =
+        end < segments.length && this.isSectionHeader(segments[end]);
+
+      if (nextIsSectionBreak || overlapTokens <= 0) {
+        cursor = end;
+      } else {
+        const overlapStart = this.rewindForOverlap(segments, end, overlapTokens);
+        const nextCursor = Math.max(overlapStart, cursor + 1);
+        cursor = Math.min(nextCursor, end);
+      }
+
+      // Safety: guarantee forward progress
       if (cursor <= (chunks.length > 1 ? cursor - 1 : -1)) {
         cursor = end;
       }
@@ -143,6 +175,50 @@ export class ChunkingService {
   }
 
   /**
+   * Splits text into "segments" — the atomic units of chunking.
+   *
+   * A segment is either:
+   *   - A markdown section header (e.g. "# Introduction")
+   *   - A single sentence
+   *
+   * Headers are kept as separate segments so the chunker can use them
+   * as natural break points between topics.
+   */
+  private splitIntoSegments(text: string): string[] {
+    // Normalise line endings
+    const normalised = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Split on paragraph boundaries (double newline)
+    const paragraphs = normalised.split(/\n{2,}/);
+
+    const segments: string[] = [];
+
+    for (const para of paragraphs) {
+      const trimmed = para.trim();
+      if (!trimmed) continue;
+
+      // Check if the paragraph is a markdown header
+      if (this.isSectionHeader(trimmed)) {
+        segments.push(trimmed);
+        continue;
+      }
+
+      // Split into sentences within the paragraph
+      const sentences = this.splitSentences(trimmed);
+      segments.push(...sentences);
+    }
+
+    return segments;
+  }
+
+  /**
+   * Returns true if the text is a markdown section header (# / ## / ### etc).
+   */
+  private isSectionHeader(text: string): boolean {
+    return /^#{1,6}\s/.test(text);
+  }
+
+  /**
    * Sentence splitter.
    * Handles: period/exclamation/question followed by whitespace,
    * newline boundaries, and markdown headers.
@@ -150,25 +226,14 @@ export class ChunkingService {
    * the character after the period to be uppercase or a newline.
    */
   private splitSentences(text: string): string[] {
-    // Normalise line endings
-    const normalised = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-    // Split on paragraph boundaries first
-    const paragraphs = normalised.split(/\n{2,}/);
-
+    // Split on sentence-ending punctuation followed by space + uppercase,
+    // or on single newlines.
+    const parts = text.split(/(?<=[.!?])\s+(?=[A-Z])|\n/);
     const sentences: string[] = [];
 
-    for (const para of paragraphs) {
-      const trimmed = para.trim();
-      if (!trimmed) continue;
-
-      // Split on sentence-ending punctuation followed by space + uppercase,
-      // or on single newlines.
-      const parts = trimmed.split(/(?<=[.!?])\s+(?=[A-Z])|\n/);
-      for (const part of parts) {
-        const s = part.trim();
-        if (s.length > 0) sentences.push(s);
-      }
+    for (const part of parts) {
+      const s = part.trim();
+      if (s.length > 0) sentences.push(s);
     }
 
     return sentences;
@@ -176,11 +241,14 @@ export class ChunkingService {
 
   /**
    * Given a forward cursor `end` (exclusive), walk backward through
-   * sentences to find the start position that creates an overlap of
+   * segments to find the start position that creates an overlap of
    * approximately `overlapTokens`.
+   *
+   * Stops rewinding if it hits a section header — overlap should not
+   * carry context across topic boundaries.
    */
   private rewindForOverlap(
-    sentences: string[],
+    segments: string[],
     end: number,
     overlapTokens: number,
   ): number {
@@ -191,7 +259,14 @@ export class ChunkingService {
 
     while (pos > 0) {
       pos--;
-      tokens += this.estimateTokens(sentences[pos]);
+
+      // Don't pull overlap across section boundaries
+      if (this.isSectionHeader(segments[pos])) {
+        pos++; // don't include the header in overlap
+        break;
+      }
+
+      tokens += this.estimateTokens(segments[pos]);
       if (tokens >= overlapTokens) break;
     }
 
@@ -199,16 +274,35 @@ export class ChunkingService {
   }
 
   /**
-   * Last-resort: splits a single enormous sentence into hard character
-   * slices of at most `maxTokens` estimated tokens each.
+   * Last-resort: splits a single enormous segment into slices of at most
+   * `maxTokens` estimated tokens each, breaking at word boundaries to
+   * preserve readability.
    */
   private hardSplit(text: string, maxTokens: number): string[] {
     const maxChars = maxTokens * CHARS_PER_TOKEN;
     const parts: string[] = [];
 
-    for (let i = 0; i < text.length; i += maxChars) {
-      const slice = text.slice(i, i + maxChars).trim();
+    let remaining = text;
+
+    while (remaining.length > 0) {
+      if (remaining.length <= maxChars) {
+        const trimmed = remaining.trim();
+        if (trimmed.length > 0) parts.push(trimmed);
+        break;
+      }
+
+      // Take maxChars, then back up to the last space to avoid mid-word cuts
+      let sliceEnd = maxChars;
+      const lastSpace = remaining.lastIndexOf(' ', sliceEnd);
+      if (lastSpace > maxChars * 0.5) {
+        // Only use the word boundary if it's reasonably close (>50% of max)
+        sliceEnd = lastSpace;
+      }
+
+      const slice = remaining.slice(0, sliceEnd).trim();
       if (slice.length > 0) parts.push(slice);
+
+      remaining = remaining.slice(sliceEnd).trim();
     }
 
     return parts;

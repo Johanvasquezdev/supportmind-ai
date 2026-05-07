@@ -17,6 +17,9 @@ describe('ChatService', () => {
       create: jest.Mock;
       findMany: jest.Mock;
     };
+    usage: {
+      create: jest.Mock;
+    };
     $transaction: jest.Mock;
   };
 
@@ -24,7 +27,7 @@ describe('ChatService', () => {
     ragService = {
       retrieve: jest.fn().mockResolvedValue([
         {
-          vectorId: 'doc-1-0',
+          vectorId: 'tenant-a-doc-1-0',
           score: 0.9,
           text: 'Refunds are available within 30 days.',
           metadata: {
@@ -59,6 +62,9 @@ describe('ChatService', () => {
           { role: 'user', content: 'Previous question' },
         ]),
       },
+      usage: {
+        create: jest.fn().mockResolvedValue({}),
+      },
       $transaction: jest.fn().mockResolvedValue([]),
     };
 
@@ -69,7 +75,7 @@ describe('ChatService', () => {
     );
   });
 
-  it('creates a conversation, calls AI, saves both messages, and returns the response', async () => {
+  it('creates a conversation, calls AI, saves both messages, tracks usage, and returns the response', async () => {
     const result = await service.sendMessage({
       tenantId: 'tenant-a',
       userId: 'user-1',
@@ -88,11 +94,10 @@ describe('ChatService', () => {
       5,
     );
     expect(aiService.generateResponse).toHaveBeenCalledWith({
-      tenantId: 'tenant-a',
       message: 'What is the refund policy?',
       context: [
         {
-          vectorId: 'doc-1-0',
+          vectorId: 'tenant-a-doc-1-0',
           score: 0.9,
           text: 'Refunds are available within 30 days.',
           metadata: {
@@ -107,6 +112,7 @@ describe('ChatService', () => {
         { role: 'user', content: 'Previous question' },
         { role: 'assistant', content: 'Previous answer' },
       ],
+      mode: 'answer',
     });
     expect(prisma.$transaction).toHaveBeenCalledWith([
       expect.objectContaining({
@@ -124,6 +130,13 @@ describe('ChatService', () => {
         }),
       }),
     ]);
+    expect(prisma.usage.create).toHaveBeenCalledWith({
+      data: {
+        tenantId: 'tenant-a',
+        inputTokens: 10,
+        outputTokens: 8,
+      },
+    });
     expect(result).toEqual({
       conversationId: 'conversation-1',
       message: 'Refunds are available within 30 days.',
@@ -134,6 +147,22 @@ describe('ChatService', () => {
         totalTokens: 18,
       },
     });
+  });
+
+  it('skips usage tracking when tokens are zero', async () => {
+    aiService.generateResponse.mockResolvedValueOnce({
+      answer: "I don't have enough information.",
+      context: [],
+      usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+    });
+
+    await service.sendMessage({
+      tenantId: 'tenant-a',
+      userId: 'user-1',
+      message: 'Something',
+    });
+
+    expect(prisma.usage.create).not.toHaveBeenCalled();
   });
 
   it('trims the user message before retrieval and persistence', async () => {

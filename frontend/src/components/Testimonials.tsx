@@ -1,69 +1,114 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SectionHeading } from "./SectionHeading";
 
 const testimonials = [
   {
-    quote: "SupportMind AI reduced our response time from 4 hours to under 2 minutes. Customer satisfaction has never been higher.",
+    quote: "SupportMind AI reduced our response time from 4 hours to under 2 minutes. Our customer satisfaction scores have never been higher.",
     name: "Sarah Chen",
     role: "Head of Customer Success at TechFlow Inc",
     initials: "SC",
+    color: "bg-blue-600",
   },
   {
-    quote: "We cut support costs by 60% while improving quality. The AI handles repetitive tickets, and our team focuses on complex issues.",
+    quote: "We cut our support costs by 60% while improving quality. The AI handles 80% of our tickets, and our team focuses on complex issues.",
     name: "Michael Rodriguez",
     role: "VP of Operations at CloudScale",
     initials: "MR",
+    color: "bg-purple-600",
+  },
+  {
+    quote: "The onboarding process was incredibly smooth. Within a week, the AI was answering technical questions accurately from our knowledge base.",
+    name: "Jessica Taylor",
+    role: "Director of Support at DataStack",
+    initials: "JT",
+    color: "bg-emerald-600",
+  },
+  {
+    quote: "Our international customers love getting instant answers in their native languages. SupportMind AI has been a game-changer for our global expansion.",
+    name: "David Kim",
+    role: "COO at GlobalReach",
+    initials: "DK",
+    color: "bg-orange-600",
   },
 ];
 
 export function Testimonials() {
   const [active, setActive] = useState(0);
-  const visible = [testimonials[active], testimonials[(active + 1) % testimonials.length]];
+  const [animateKey, setAnimateKey] = useState(0);
+
+  // When active changes, increment animateKey to re-trigger the animation
+  useEffect(() => {
+    setAnimateKey((prev) => prev + 1);
+  }, [active]);
+
+  const visibleIndices = [active, (active + 1) % testimonials.length];
 
   return (
     <section className="py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading
-          title="Loved by"
-          highlight="Thousands"
-          subtitle="See what our customers have to say about transforming their support"
-        />
-        <div className="grid gap-8 lg:grid-cols-2">
-          {visible.map((item) => (
-            <article key={item.name} className="rounded-2xl border border-border bg-card/70 p-10">
-              <Quote className="mb-8 size-12 text-blue-500" />
-              <p className="text-xl leading-relaxed text-muted-foreground">{item.quote}</p>
-              <div className="mt-8 flex items-center gap-4">
-                <span className="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-600 font-bold text-white">
-                  {item.initials}
-                </span>
-                <div>
-                  <h3 className="font-semibold text-foreground">{item.name}</h3>
-                  <p className="text-sm text-muted-foreground">{item.role}</p>
-                </div>
-              </div>
-            </article>
-          ))}
+        <div className="text-center">
+          <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            Loved by <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Thousands</span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+            See what our customers have to say about transforming their support
+          </p>
         </div>
-        <div className="mt-10 flex justify-center gap-5">
+
+        <div key={animateKey} className="mt-16 grid gap-6 lg:grid-cols-2 animate-fade-in">
+          {visibleIndices.map((index) => {
+            const item = testimonials[index];
+            return (
+              <article key={item.name} className="rounded-2xl border border-black/5 dark:border-white/5 bg-white dark:bg-[#0d121f] p-10 shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-500/10">
+                <Quote className="mb-6 size-10 text-blue-500/80 stroke-[1.5]" />
+                <p className="text-lg leading-relaxed text-muted-foreground">{item.quote}</p>
+                <div className="mt-8 flex items-center gap-4">
+                  <span className={`flex size-12 shrink-0 items-center justify-center rounded-full ${item.color} text-sm font-bold text-white`}>
+                    {item.initials}
+                  </span>
+                  <div>
+                    <h3 className="text-base font-semibold text-black dark:text-white">{item.name}</h3>
+                    <p className="text-sm text-black/60 dark:text-white/60">{item.role}</p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        
+        <div className="mt-12 flex items-center justify-center gap-6">
           <button
             type="button"
             onClick={() => setActive((value) => (value === 0 ? testimonials.length - 1 : value - 1))}
-            className="flex size-12 items-center justify-center rounded-full bg-white/10 text-foreground hover:bg-white/15"
+            className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-all hover:bg-accent active:scale-95"
             aria-label="Previous testimonial"
           >
-            <ChevronLeft />
+            <ChevronLeft className="size-5" />
           </button>
+          
+          <div className="flex items-center gap-2">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActive(index)}
+                aria-label={`Go to testimonial ${index + 1}`}
+                className={`h-1.5 transition-all duration-300 ${
+                  active === index ? "w-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" : "w-1.5 rounded-full bg-muted hover:bg-muted-foreground/40"
+                }`}
+              />
+            ))}
+          </div>
+
           <button
             type="button"
             onClick={() => setActive((value) => (value + 1) % testimonials.length)}
-            className="flex size-12 items-center justify-center rounded-full bg-white/10 text-foreground hover:bg-white/15"
+            className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-all hover:bg-accent active:scale-95"
             aria-label="Next testimonial"
           >
-            <ChevronRight />
+            <ChevronRight className="size-5" />
           </button>
         </div>
       </div>

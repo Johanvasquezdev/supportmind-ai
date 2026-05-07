@@ -8,10 +8,10 @@ datasource db {
 }
 
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  apiKey    String   @unique
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  name       String
+  apiKeyHash String   @unique @map("api_key_hash")
+  createdAt  DateTime @default(now())
 
   users         User[]
   documents     Document[]

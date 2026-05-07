@@ -66,6 +66,27 @@ describe('ChunkingService', () => {
     });
   });
 
+  // ─── Default configuration ──────────────────────────────────────────────
+
+  it('should use 500–1000 token defaults with 150 overlap', () => {
+    // Create enough content to produce multiple chunks at default settings
+    const sentences: string[] = [];
+    for (let i = 0; i < 200; i++) {
+      sentences.push(`Policy statement number ${i} explaining the detailed procedure for handling customer escalations.`);
+    }
+    const text = sentences.join(' ');
+
+    // Use defaults (no options)
+    const chunks = service.chunk(text);
+
+    expect(chunks.length).toBeGreaterThan(1);
+
+    // Chunks should generally be 500–1000 tokens (allowing tolerance for runt merging)
+    for (const chunk of chunks) {
+      expect(chunk.tokenEstimate).toBeLessThanOrEqual(1200); // max + merge tolerance
+    }
+  });
+
   // ─── Overlap ─────────────────────────────────────────────────────────────
 
   it('should create overlapping content between consecutive chunks', () => {
@@ -107,6 +128,50 @@ describe('ChunkingService', () => {
     }
   });
 
+  // ─── Section awareness ──────────────────────────────────────────────────
+
+  it('should start a new chunk at markdown section boundaries', () => {
+    const text = [
+      '# Returns Policy',
+      ...Array(15).fill('All items may be returned within 30 days.'),
+      '',
+      '## Shipping Policy',
+      ...Array(15).fill('We ship to all 50 states within 3 business days.'),
+    ].join('\n');
+
+    const chunks = service.chunk(text, { maxTokens: 1000, minTokens: 0, overlapTokens: 50 });
+
+    // There should be at least 2 chunks, one per section
+    expect(chunks.length).toBeGreaterThanOrEqual(2);
+
+    // First chunk should contain returns content
+    expect(chunks[0].text).toContain('Returns Policy');
+    expect(chunks[0].text).toContain('returned within 30 days');
+
+    // A subsequent chunk should start with shipping content
+    const shippingChunk = chunks.find((c) => c.text.includes('Shipping Policy'));
+    expect(shippingChunk).toBeDefined();
+    expect(shippingChunk!.text).toContain('ship to all 50 states');
+  });
+
+  it('should not carry overlap across section boundaries', () => {
+    const text = [
+      '# Section A',
+      ...Array(10).fill('UniqueWordA appears in section A.'),
+      '',
+      '# Section B',
+      ...Array(10).fill('UniqueWordB appears in section B.'),
+    ].join('\n');
+
+    const chunks = service.chunk(text, { maxTokens: 500, minTokens: 0, overlapTokens: 100 });
+
+    const sectionBChunk = chunks.find((c) => c.text.includes('Section B'));
+    expect(sectionBChunk).toBeDefined();
+
+    // Section B should NOT contain text from Section A
+    expect(sectionBChunk!.text).not.toContain('UniqueWordA');
+  });
+
   // ─── Edge cases ──────────────────────────────────────────────────────────
 
   it('should hard-split a single enormous sentence', () => {
@@ -117,6 +182,25 @@ describe('ChunkingService', () => {
     expect(chunks.length).toBeGreaterThanOrEqual(4);
     for (const chunk of chunks) {
       expect(chunk.tokenEstimate).toBeLessThanOrEqual(500);
+    }
+  });
+
+  it('should hard-split at word boundaries when possible', () => {
+    // Long text with spaces — hard split should break at words, not mid-word
+    const words = Array(500).fill('elephant').join(' ');
+    const chunks = service.chunk(words, { maxTokens: 100, minTokens: 0, overlapTokens: 0 });
+
+    expect(chunks.length).toBeGreaterThan(1);
+
+    // Every chunk should start and end with a complete word
+    for (const chunk of chunks) {
+      expect(chunk.text).not.toMatch(/^\s/);
+      expect(chunk.text).not.toMatch(/\s$/);
+      // No partial "elephant" — every word should be whole
+      const words = chunk.text.split(/\s+/);
+      for (const word of words) {
+        expect(word).toBe('elephant');
+      }
     }
   });
 

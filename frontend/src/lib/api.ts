@@ -7,31 +7,31 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Clerk handles auth redirects via middleware,
+      // but if a 401 slips through, redirect to sign-in
+      if (typeof window !== 'undefined') {
+        window.location.href = '/sign-in';
+      }
     }
     return Promise.reject(error);
   }
 );
+
+/**
+ * Sets the authorization header for all subsequent API requests.
+ * Called by the useApi hook with the Clerk session token.
+ */
+export function setAuthToken(token: string | null) {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+}
 
 export default api;

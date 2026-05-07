@@ -48,8 +48,34 @@ export class VectorService {
     }
   }
 
+  // ─── Write ──────────────────────────────────────────────────────────────
+
+  /**
+   * Upserts vectors into Pinecone (or the in-memory fallback).
+   *
+   * Every record MUST carry a valid tenantId in its metadata.
+   * All records in a single batch MUST belong to the same tenant —
+   * mixing tenants in one upsert is a programming error and will throw.
+   */
   async upsert(vectors: VectorRecord[]): Promise<void> {
-    const records = vectors.map((vector) => this.toRecord(vector));
+    if (vectors.length === 0) return;
+
+    // Validate every record has a tenantId and they all match
+    const tenantIds = new Set<string>();
+    const records: PineconeRecord<VectorMetadata>[] = [];
+
+    for (const vector of vectors) {
+      const record = this.toRecord(vector); // throws if tenantId or text missing
+      tenantIds.add(vector.metadata.tenantId);
+      records.push(record);
+    }
+
+    if (tenantIds.size > 1) {
+      throw new BadRequestException(
+        `Upsert batch contains mixed tenants: [${[...tenantIds].join(', ')}]. ` +
+          'All records in a single upsert must belong to one tenant.',
+      );
+    }
 
     if (this.index) {
       await this.index.upsert({ records });
@@ -65,11 +91,24 @@ export class VectorService {
     }
   }
 
+  // ─── Read ───────────────────────────────────────────────────────────────
+
+  /**
+   * Queries for the topK most similar vectors, strictly scoped to
+   * the given tenantId.
+   *
+   * Pinecone path: uses server-side metadata filter { tenantId: { $eq } }
+   * so no cross-tenant data is ever returned from the index.
+   *
+   * In-memory path: filters by tenantId before scoring.
+   */
   async query(
     values: number[],
     tenantId: string,
     topK = 5,
   ): Promise<RetrievedChunk[]> {
+    this.assertTenantId(tenantId, 'query');
+
     if (this.index) {
       const response = await this.index.query({
         vector: values,
@@ -83,13 +122,24 @@ export class VectorService {
       return response.matches.map((match) => {
         const metadata = match.metadata;
 
+        // Defense-in-depth: verify the returned metadata actually matches
+        // the requested tenant. Pinecone filters should guarantee this,
+        // but we verify it to catch misconfigured indexes or SDK bugs.
+        if (metadata && metadata.tenantId !== tenantId) {
+          this.logger.error(
+            `Tenant mismatch in Pinecone response: requested "${tenantId}", ` +
+              `got "${metadata.tenantId}" for vector "${match.id}". Skipping.`,
+          );
+          return null;
+        }
+
         return {
           vectorId: match.id,
           score: match.score ?? 0,
           text: metadata?.text ?? '',
           metadata: metadata ?? { tenantId, text: '' },
         };
-      });
+      }).filter((chunk): chunk is RetrievedChunk => chunk !== null);
     }
 
     return Array.from(this.store.values())
@@ -108,7 +158,20 @@ export class VectorService {
       }));
   }
 
+  // ─── Delete ─────────────────────────────────────────────────────────────
+
+  /**
+   * Deletes all vectors for a given tenant + document pair.
+   * Both tenantId and documentId are required in the Pinecone filter
+   * to prevent cross-tenant deletion.
+   */
   async deleteByDocument(tenantId: string, documentId: string): Promise<void> {
+    this.assertTenantId(tenantId, 'deleteByDocument');
+
+    if (!documentId?.trim()) {
+      throw new BadRequestException('documentId is required for deleteByDocument');
+    }
+
     if (this.index) {
       await this.index.deleteMany({
         filter: {
@@ -129,19 +192,25 @@ export class VectorService {
     }
   }
 
+  // ─── Diagnostic helpers (in-memory only) ────────────────────────────────
+
   get size(): number {
     return this.store.size;
   }
 
   getByTenant(tenantId: string): VectorRecord[] {
+    this.assertTenantId(tenantId, 'getByTenant');
     return Array.from(this.store.values()).filter(
       (record) => record.metadata.tenantId === tenantId,
     );
   }
 
-  getByDocument(documentId: string): VectorRecord[] {
+  getByDocument(tenantId: string, documentId: string): VectorRecord[] {
+    this.assertTenantId(tenantId, 'getByDocument');
     return Array.from(this.store.values()).filter(
-      (record) => record.metadata.documentId === documentId,
+      (record) =>
+        record.metadata.tenantId === tenantId &&
+        record.metadata.documentId === documentId,
     );
   }
 
@@ -149,9 +218,24 @@ export class VectorService {
     this.store.clear();
   }
 
+  // ─── Internals ──────────────────────────────────────────────────────────
+
+  /**
+   * Validates and converts a VectorRecord to a PineconeRecord.
+   * Rejects records without tenantId or text — these fields are
+   * mandatory for tenant isolation and RAG retrieval.
+   */
   private toRecord(vector: VectorRecord): PineconeRecord<VectorMetadata> {
-    if (!vector.metadata.tenantId || !vector.metadata.text) {
-      throw new BadRequestException('Vector metadata requires tenantId and text');
+    if (!vector.metadata.tenantId?.trim()) {
+      throw new BadRequestException(
+        'Vector metadata requires a non-empty tenantId',
+      );
+    }
+
+    if (!vector.metadata.text?.trim()) {
+      throw new BadRequestException(
+        'Vector metadata requires non-empty text',
+      );
     }
 
     const metadata: VectorMetadata = {
@@ -172,6 +256,19 @@ export class VectorService {
       values: vector.values,
       metadata,
     };
+  }
+
+  /**
+   * Central guard: every public method that accepts a tenantId MUST
+   * call this first. Prevents empty/blank tenantIds from silently
+   * disabling tenant filters.
+   */
+  private assertTenantId(tenantId: string, method: string): void {
+    if (!tenantId?.trim()) {
+      throw new BadRequestException(
+        `${method} requires a non-empty tenantId`,
+      );
+    }
   }
 
   private isConfigured(value: string | undefined): value is string {

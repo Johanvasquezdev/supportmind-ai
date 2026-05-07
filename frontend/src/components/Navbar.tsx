@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth, UserButton } from "@clerk/nextjs";
 import { Globe, Menu, Moon, Sun, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -14,6 +15,7 @@ const navItems = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDark, setIsDark] = useState(true);
+  const { isSignedIn, isLoaded } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
@@ -59,19 +61,42 @@ export function Navbar() {
               <Globe className="size-5" />
               <span className="text-xs font-medium">EN</span>
             </button>
-            <Link
-              href="/login"
-              className="group relative px-4 py-2 text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Sign In
-              <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 group-hover:w-full" />
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 text-white transition-all hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 active:scale-95"
-            >
-              Start Free Trial
-            </Link>
+
+            {isLoaded && !isSignedIn && (
+              <>
+                <Link
+                  href="/sign-in"
+                  className="group relative px-4 py-2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Sign In
+                  <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 group-hover:w-full" />
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 text-white transition-all hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 active:scale-95"
+                >
+                  Start Free Trial
+                </Link>
+              </>
+            )}
+
+            {isLoaded && isSignedIn && (
+              <>
+                <Link
+                  href="/dashboard/chat"
+                  className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  Dashboard
+                </Link>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "size-9 border-2 border-purple-500/50",
+                    },
+                  }}
+                />
+              </>
+            )}
           </div>
 
           <button
@@ -117,18 +142,30 @@ export function Navbar() {
               </button>
             </div>
             <div className="space-y-2 pt-4">
-              <Link
-                href="/login"
-                className="block w-full px-4 py-2 text-center text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="block w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 text-center text-white"
-              >
-                Start Free Trial
-              </Link>
+              {isLoaded && !isSignedIn && (
+                <>
+                  <Link
+                    href="/sign-in"
+                    className="block w-full px-4 py-2 text-center text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    className="block w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 text-center text-white"
+                  >
+                    Start Free Trial
+                  </Link>
+                </>
+              )}
+              {isLoaded && isSignedIn && (
+                <Link
+                  href="/dashboard/chat"
+                  className="block w-full rounded-lg border border-border px-4 py-2 text-center text-foreground transition-colors hover:bg-accent"
+                >
+                  Dashboard
+                </Link>
+              )}
             </div>
           </div>
         </div>

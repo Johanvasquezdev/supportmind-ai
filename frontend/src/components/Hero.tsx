@@ -1,7 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, FileText, MessageSquare, Shield, Sparkles } from "lucide-react";
 
-const trustItems = ["No credit card required", "14-day free trial"];
+const valueProps = [
+  { Icon: FileText, text: "Upload your docs" },
+  { Icon: Sparkles, text: "AI learns your business" },
+  { Icon: MessageSquare, text: "Answers from your content" },
+  { Icon: Shield, text: "No hallucinations" },
+];
 
 export function Hero() {
   return (
@@ -15,49 +20,65 @@ export function Hero() {
         <div className="mx-auto max-w-5xl space-y-8 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-accent px-4 py-2 backdrop-blur-sm">
             <Sparkles className="size-4 text-purple-400" />
-            <span className="text-sm text-muted-foreground">Powered by Advanced AI</span>
+            <span className="text-sm text-muted-foreground">AI Customer Support Trained on Your Knowledge Base</span>
           </div>
 
           <h1 className="text-5xl font-bold tracking-normal sm:text-6xl md:text-7xl lg:text-8xl">
-            <span className="mb-2 block text-foreground">Deploy AI Support That</span>
+            <span className="mb-2 block text-foreground">Your Docs Become</span>
             <span className="block bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text pb-2 text-transparent">
-              Knows Your Business
+              Your Support Agent
             </span>
           </h1>
 
           <p className="mx-auto max-w-3xl text-xl text-muted-foreground md:text-2xl">
-            Upload your documentation, train AI on your internal knowledge, and automate customer
-            support instantly.
+            Upload your documentation and FAQs. SupportMind trains an AI agent that answers
+            customer questions using <strong className="text-foreground">only your verified content</strong> — accurate, instant, 24/7.
           </p>
 
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          {/* Value props row */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2 sm:gap-6">
+            {valueProps.map(({ Icon, text }) => (
+              <div
+                key={text}
+                className="flex items-center gap-2 rounded-full border border-border/50 bg-accent/50 px-4 py-2 text-sm text-muted-foreground backdrop-blur-sm"
+              >
+                <Icon className="size-4 text-purple-400" />
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
             <Link
-              href="/register"
+              href="/sign-up"
               className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-white shadow-lg shadow-purple-500/30 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/60 active:scale-95"
             >
               Start Free Trial
               <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
             </Link>
             <a
-              href="#features"
+              href="#how-it-works"
               className="group relative overflow-hidden rounded-lg border border-border px-8 py-4 text-foreground backdrop-blur-sm transition-all hover:scale-105 hover:border-blue-500/50 hover:bg-accent active:scale-95"
             >
-              <span className="relative z-10">Book Demo</span>
+              <span className="relative z-10">See How It Works</span>
               <span className="absolute inset-0 translate-y-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 transition-transform duration-300 group-hover:translate-y-0" />
             </a>
           </div>
 
-          <div className="space-y-4 pt-8">
-            <p className="mx-auto max-w-2xl text-sm text-muted-foreground/80">
-              Answers based on your documentation, FAQs, and internal knowledge.
-            </p>
+          <div className="space-y-4 pt-4">
             <div className="flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground sm:flex-row sm:gap-8">
-              {trustItems.map((item) => (
-                <div key={item} className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-green-500" />
-                  <span>{item}</span>
-                </div>
-              ))}
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-green-500" />
+                <span>No credit card required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-green-500" />
+                <span>14-day free trial</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-green-500" />
+                <span>Set up in under 10 minutes</span>
+              </div>
             </div>
           </div>
         </div>

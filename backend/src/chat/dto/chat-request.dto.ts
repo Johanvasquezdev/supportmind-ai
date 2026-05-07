@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { AnswerMode } from '../../ai/ai.service';
 
 export class ChatRequestDto {
   @IsString()
@@ -9,4 +10,8 @@ export class ChatRequestDto {
   @IsOptional()
   @IsUUID()
   conversationId?: string;
+
+  @IsOptional()
+  @IsIn(['answer', 'summary', 'exact'])
+  mode?: AnswerMode;
 }

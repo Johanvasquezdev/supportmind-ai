@@ -14,7 +14,7 @@ describe('RagService', () => {
     vectorService = {
       query: jest.fn().mockResolvedValue([
         {
-          vectorId: 'tenant-a-doc-0',
+          vectorId: 'tenant-a-doc-1-0',
           score: 0.91,
           text: 'Relevant tenant text',
           metadata: {
@@ -40,7 +40,7 @@ describe('RagService', () => {
     expect(vectorService.query).toHaveBeenCalledWith([1, 0, 0], 'tenant-a', 5);
     expect(results).toEqual([
       {
-        vectorId: 'tenant-a-doc-0',
+        vectorId: 'tenant-a-doc-1-0',
         score: 0.91,
         text: 'Relevant tenant text',
         metadata: {

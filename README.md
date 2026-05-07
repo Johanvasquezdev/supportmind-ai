@@ -1,278 +1,327 @@
-# SupportMind AI 🚀
+# SupportMind AI
 
-SupportMind AI es una plataforma B2B SaaS impulsada por Inteligencia Artificial, diseñada para ayudar a las empresas a automatizar y optimizar sus procesos de soporte al cliente.
+SupportMind AI is a multi-tenant customer support platform that answers customer questions using a company's own internal knowledge base.
 
-## 🚀 Inicio Rápido con Docker
+Companies upload support documents, the backend chunks and embeds those documents, and chat responses are generated only from tenant-specific retrieved context.
 
-### Requisitos Previos
-- Docker y Docker Compose instalados
-- Clave de API de OpenAI
+## What This Repo Contains
 
-### Configuración
+- `frontend/` - Next.js + Tailwind application
+- `backend/` - NestJS API with Prisma, OpenAI, Pinecone, JWT auth, and API-key auth
+- `docker-compose.yml` - local development services
+- `.env.example` - safe example environment variables
 
-1. **Clonar el repositorio**
+## Core Workflow
+
+```text
+Document upload
+  -> chunk document text
+  -> create embeddings
+  -> upsert vectors with tenant metadata
+
+User chat
+  -> authenticate tenant
+  -> embed user question
+  -> query Pinecone with tenant filter
+  -> build grounded prompt
+  -> call OpenAI
+  -> save conversation and messages
+```
+
+## Architecture
+
+```text
+Frontend (Next.js)
+  -> Backend (NestJS)
+      -> Auth module
+      -> Documents module
+      -> RAG module
+      -> AI module
+      -> Chat module
+      -> Billing module
+      -> Prisma module
+
+External services:
+  -> Neon Postgres
+  -> Pinecone
+  -> OpenAI
+  -> Clerk
+  -> Stripe
+```
+
+## Backend Modules
+
+### Auth
+
+- JWT auth for dashboard users
+- API-key guard for widget requests
+- Tenant ID is resolved by trusted auth context, not request body
+
+### Documents
+
+- Stores uploaded documents in Postgres
+- Chunks document content
+- Generates embeddings
+- Stores document chunks and vector IDs
+
+### Vector
+
+- Uses Pinecone when configured
+- Stores vectors with metadata:
+
+```ts
+{
+  tenantId: string;
+  text: string;
+  documentId?: string;
+  chunkIndex?: number;
+}
+```
+
+All vector queries apply tenant filtering.
+
+### RAG
+
+- Converts user question to an embedding
+- Queries the vector store
+- Returns the top relevant tenant-scoped chunks
+
+### AI
+
+- Builds a grounded prompt from:
+  - user message
+  - retrieved context
+  - conversation history
+- Calls OpenAI chat completions
+- Refuses to answer when no relevant context exists
+- Tracks token usage
+
+### Chat
+
+- Creates or continues conversations
+- Loads recent history
+- Calls RAG and AI services
+- Saves user and assistant messages
+
+### Billing
+
+- Creates Stripe Checkout Sessions for subscriptions
+- Uses Stripe Price IDs from environment variables
+- Stores tenant/user IDs in Stripe metadata for webhook handling
+
+## Tech Stack
+
+| Area | Tech |
+| --- | --- |
+| Frontend | Next.js, React, Tailwind CSS |
+| Auth UI | Clerk |
+| Backend | NestJS, TypeScript |
+| Database | Neon Postgres |
+| ORM | Prisma |
+| Vector DB | Pinecone |
+| AI | OpenAI |
+| Billing | Stripe Checkout |
+
+## Environment Variables
+
+Never commit real `.env` files. They are ignored by Git.
+
+Backend example:
+
+```env
+DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
+JWT_SECRET="generate-a-strong-secret"
+JWT_EXPIRES_IN="7d"
+
+CLERK_SECRET_KEY="your-clerk-secret-key"
+DEFAULT_TENANT_ID="optional-dev-tenant-id"
+
+OPENAI_API_KEY="your-openai-key"
+OPENAI_CHAT_MODEL="gpt-4o-mini"
+
+EMBEDDING_MODEL="text-embedding-3-small"
+EMBEDDING_DIMENSIONS=1536
+
+PINECONE_API_KEY="your-pinecone-key"
+PINECONE_INDEX_NAME="supportmind"
+
+STRIPE_SECRET_KEY="sk_test_your-stripe-secret-key"
+STRIPE_BASIC_PRICE_ID="price_basic_monthly"
+STRIPE_PRO_PRICE_ID="price_pro_monthly"
+
+PORT=3001
+FRONTEND_URL="http://localhost:3000"
+```
+
+Frontend example:
+
+```env
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your-clerk-publishable-key"
+CLERK_SECRET_KEY="your-clerk-secret-key"
+```
+
+## Pinecone Setup
+
+Create an index manually:
+
+- Name: `supportmind`
+- Dimension: `1536`
+- Metric: `cosine`
+
+The dimension must match `EMBEDDING_DIMENSIONS`.
+
+## Stripe Setup
+
+Create two recurring prices in Stripe and set:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_BASIC_PRICE_ID`
+- `STRIPE_PRO_PRICE_ID`
+
+The checkout page calls `POST /billing/checkout-session` and redirects to Stripe-hosted Checkout.
+
+## Install
+
 ```bash
-git clone <repository-url>
-cd SupportMind-AI
+npm install
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-2. **Configurar variables de entorno**
-```bash
-cp .env.example .env
-# Editar .env con tu clave de OpenAI
-```
+## Database
 
-3. **Levantar todos los servicios**
-```bash
-docker-compose up -d
-```
+Push the Prisma schema to the configured database:
 
-4. **Acceder a la aplicación**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-- PostgreSQL: localhost:5432
-- ChromaDB: http://localhost:8000
-
-## 🏗️ Arquitectura
-
-```
-Frontend (Next.js) ↓ Backend API (Node.js/NestJS) ↓ Capa Wrapper de IA (Prompts + Reglas) ↓ API de OpenAI (LLM) ↓ Base de Datos Vectorial (RAG)
-```
-
-### Componentes Principales
-
-- **Frontend**: Next.js 14, React, Tailwind CSS
-- **Backend**: Node.js, NestJS, TypeScript
-- **Base de Datos**: PostgreSQL + ChromaDB (vector)
-- **IA**: OpenAI API con RAG (Retrieval-Augmented Generation)
-- **Autenticación**: JWT con rol-based access
-- **Rate Limiting**: Por usuario y por IP
-
-## 📋 Funcionalidades Implementadas
-
-### ✅ Completadas
-- [x] Autenticación y registro de usuarios
-- [x] Sistema multi-tenant (B2B)
-- [x] Chat en tiempo real con IA
-- [x] Subida y procesamiento de documentos
-- [x] Sistema RAG (Retrieval-Augmented Generation)
-- [x] Generación de embeddings con OpenAI
-- [x] Base de datos vectorial (ChromaDB)
-- [x] Rate limiting y seguimiento de uso
-- [x] Dockerización completa
-- [x] CI/CD con GitHub Actions
-
-### 🚀 En Progreso
-- [ ] Sistema de pagos y suscripciones
-- [ ] Panel de administración
-- [ ] Integración con Slack/Microsoft Teams
-- [ ] Analíticas avanzadas
-
-## 🔧 Desarrollo Local
-
-### Backend
 ```bash
 cd backend
-npm install
+npx prisma db push
+```
+
+Generate Prisma client:
+
+```bash
+npx prisma generate
+```
+
+## Run Locally
+
+Backend:
+
+```bash
+cd backend
 npm run start:dev
 ```
 
-### Frontend
+Frontend:
+
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
 
-### Base de Datos
-```bash
-cd backend
-npx prisma migrate dev
-npx prisma studio
+Default URLs:
+
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:3001`
+
+## API Overview
+
+### Documents
+
+```http
+POST /documents
+POST /documents/upload
+GET /documents
+GET /documents/:id
+DELETE /documents/:id
 ```
 
-## 📊 Uso de la API
-
-### Autenticación
-```bash
-# Login
-curl -X POST http://localhost:3001/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "password"}'
-
-# Registro
-curl -X POST http://localhost:3001/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "password",
-    "firstName": "John",
-    "lastName": "Doe",
-    "companyName": "My Company"
-  }'
-```
+Dashboard endpoints use JWT auth.
 
 ### Chat
-```bash
-# Enviar mensaje
-curl -X POST http://localhost:3001/chat/{chatId}/message \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "¿Cómo reseteo mi contraseña?",
-    "useRag": true,
-    "maxContext": 3
-  }'
+
+```http
+POST /chat
 ```
 
-### Documentos
-```bash
-# Subir documento
-curl -X POST http://localhost:3001/documents/upload \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "file=@document.pdf"
+Body:
+
+```json
+{
+  "message": "What is the refund policy?",
+  "conversationId": "optional-existing-conversation-id"
+}
 ```
 
-## 🔒 Seguridad
+### Billing
 
-- **Autenticación JWT** con tokens expirables
-- **Rate limiting** configurable por empresa
-- **Validación de inputs** con class-validator
-- **Sanitización de archivos** subidos
-- **CORS** configurado para producción
-- **Helmet** para headers de seguridad
-
-## 📈 Monitoreo y Analytics
-
-- **Uso de tokens** por empresa
-- **Cost tracking** en tiempo real
-- **Métricas de rendimiento**
-- **Logs estructurados** con Winston
-- **Health checks** para Docker/K8s
-
-## 🐳 Docker y Deployment
-
-### Imágenes Docker
-```bash
-# Backend
-docker build -t supportmind-backend ./backend
-
-# Frontend  
-docker build -t supportmind-frontend ./frontend
-
-# Full application
-docker build -t supportmind-app .
+```http
+POST /billing/checkout-session
 ```
 
-### Docker Compose
-```bash
-# Development
-docker-compose up -d
+Body:
 
-# Production
-docker-compose -f docker-compose.prod.yml up -d
+```json
+{
+  "plan": "basic"
+}
 ```
 
-## 🚀 Deployment
+## Security Notes
 
-### Render
-1. Conectar repositorio a Render
-2. Configurar variables de entorno
-3. Deploy automático en push a main
+- Do not send `tenantId` from the client.
+- Do not commit `.env`.
+- Use `x-api-key` for widget API-key requests.
+- Every database query should be tenant scoped.
+- Every vector query must filter by `tenantId`.
+- If secrets were pasted into chat or committed accidentally, rotate them.
 
-### Railway
-Similar a Render, configurar Dockerfile y variables de entorno
+## Tests
 
-### Manual (VPS)
-```bash
-# Clonar repositorio
-git clone <repo-url>
-cd SupportMind-AI
+Backend:
 
-# Instalar dependencias
-npm install
-
-# Configurar entorno
-cp .env.example .env
-# Editar .env
-
-# Levantar con PM2
-pm2 start ecosystem.config.js
-```
-
-## 🧪 Testing
-
-### Backend
 ```bash
 cd backend
-npm run test
-npm run test:e2e
-npm run test:cov
+npm test -- --runInBand
 ```
 
-### Frontend
+Build:
+
 ```bash
-cd frontend
-npm test
-npm run test:e2e
+cd backend
+npm run build
+
+cd ../frontend
+npm run build
 ```
 
-## 📝 Variables de Entorno
+## Current MVP Status
 
-### Backend
-```env
-DATABASE_URL=postgresql://...
-OPENAI_API_KEY=sk-...
-JWT_SECRET=your-secret-key
-CHROMA_HOST=http://localhost:8000
-REDIS_URL=redis://localhost:6379
-```
+Implemented:
 
-### Frontend
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-NEXT_PUBLIC_APP_NAME=SupportMind AI
-```
+- Multi-tenant Prisma schema
+- Document ingestion pipeline
+- OpenAI embeddings
+- Pinecone vector service
+- RAG retrieval service
+- AI wrapper service
+- Chat module
+- Stripe Checkout Session endpoint
+- JWT auth guard
+- API-key auth guard
+- Next.js landing page
+- Clerk auth pages
+- Dashboard shell
 
-## 🔧 Troubleshooting
+Still needed:
 
-### Problemas Comunes
+- Production tenant/user provisioning flow
+- Real widget endpoint using API-key guard
+- Stripe webhook persistence for subscription state
+- Full production billing portal
+- Deployment environment configuration
 
-1. **Error de conexión a ChromaDB**
-   - Verificar que ChromaDB esté corriendo en puerto 8000
-   - Revisar la configuración de red en Docker
+## License
 
-2. **Error de OpenAI API**
-   - Verificar la clave de API sea válida
-   - Chequear el límite de uso de la API
-
-3. **Migraciones de base de datos**
-   - Limpiar la base de datos: `npx prisma migrate reset`
-   - Regenerar cliente: `npx prisma generate`
-
-4. **Problemas con uploads**
-   - Verificar permisos del directorio `uploads/`
-   - Chequear tamaño máximo de archivo (10MB por defecto)
-
-## 🤝 Contribución
-
-1. Fork del repositorio
-2. Crear feature branch: `git checkout -b feature/amazing-feature`
-3. Commit: `git commit -m 'Add amazing feature'`
-4. Push: `git push origin feature/amazing-feature`
-5. Pull Request
-
-## 📄 Licencia
-
-MIT License - ver archivo [LICENSE](LICENSE)
-
-## 👤 Autor
-
-**Johan Gabriel Vásquez Camacho**
-- Estudiante de Desarrollo de Software
-- Backend & IA Especialista
-- LinkedIn: [tu-perfil]
-
----
-
-🚀 **¡SupportMind AI - Transformando el soporte con IA!**
+MIT

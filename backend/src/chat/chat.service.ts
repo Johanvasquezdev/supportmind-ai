@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AiService, ConversationMessage } from '../ai/ai.service';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { AiService, AnswerMode, ConversationMessage } from '../ai/ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RagService } from '../rag/rag.service';
 import { ChatResponseDto } from './dto/chat-response.dto';
@@ -9,6 +9,7 @@ interface SendMessageInput {
   userId: string;
   message: string;
   conversationId?: string;
+  mode?: AnswerMode;
 }
 
 const RAG_TOP_K = 5;
@@ -16,6 +17,8 @@ const MAX_HISTORY_MESSAGES = 20;
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly ragService: RagService,
@@ -40,10 +43,10 @@ export class ChatService {
       RAG_TOP_K,
     );
     const aiResponse = await this.aiService.generateResponse({
-      tenantId: input.tenantId,
       message,
       context,
       history,
+      mode: input.mode ?? 'answer',
     });
 
     await this.prisma.$transaction([
@@ -64,6 +67,9 @@ export class ChatService {
         },
       }),
     ]);
+
+    // Track token usage for billing/analytics
+    await this.trackUsage(input.tenantId, aiResponse.usage);
 
     return {
       conversationId: conversation.id,
@@ -126,5 +132,22 @@ export class ChatService {
         role: message.role as ConversationMessage['role'],
         content: message.content,
       }));
+  }
+
+  private async trackUsage(
+    tenantId: string,
+    usage: { inputTokens: number; outputTokens: number },
+  ): Promise<void> {
+    if (usage.inputTokens === 0 && usage.outputTokens === 0) {
+      return;
+    }
+
+    await this.prisma.usage.create({
+      data: {
+        tenantId,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+      },
+    });
   }
 }

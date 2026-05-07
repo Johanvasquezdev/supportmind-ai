@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
+import { hashApiKey } from '../api-key.util';
 
 type ApiKeyRequest = Request & {
   user?: {
@@ -22,15 +23,19 @@ export class ApiKeyAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<ApiKeyRequest>();
-    const apiKey = this.extractApiKey(request);
+    const rawKey = this.extractApiKey(request);
 
-    if (!apiKey || apiKey.length < ApiKeyAuthGuard.MIN_API_KEY_LENGTH) {
+    if (!rawKey || rawKey.length < ApiKeyAuthGuard.MIN_API_KEY_LENGTH) {
       throw new UnauthorizedException('Invalid API key');
     }
 
+    // Hash the incoming key, then look up by hash.
+    // The raw key is NEVER stored or logged.
+    const keyHash = hashApiKey(rawKey);
+
     const tenant = await this.prisma.tenant.findUnique({
       where: {
-        apiKey,
+        apiKeyHash: keyHash,
       },
       select: {
         id: true,

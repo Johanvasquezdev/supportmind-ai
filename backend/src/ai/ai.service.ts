@@ -2,7 +2,6 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import { PrismaService } from '../prisma/prisma.service';
 import { RagChunk } from '../rag/rag.service';
 
 const FALLBACK_ANSWER =
@@ -10,16 +9,18 @@ const FALLBACK_ANSWER =
 const MAX_HISTORY_MESSAGES = 10;
 const MAX_HISTORY_MESSAGE_LENGTH = 4000;
 
+export type AnswerMode = 'answer' | 'summary' | 'exact';
+
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
 }
 
 export interface GenerateResponseInput {
-  tenantId: string;
   message: string;
   context: RagChunk[];
   history?: ConversationMessage[];
+  mode?: AnswerMode;
 }
 
 export interface GenerateResponseResult {
@@ -38,10 +39,7 @@ export class AiService {
   private readonly openai: OpenAI;
   private readonly model: string;
 
-  constructor(
-    private readonly config: ConfigService,
-    private readonly prisma: PrismaService,
-  ) {
+  constructor(private readonly config: ConfigService) {
     this.openai = new OpenAI({
       apiKey: this.config.getOrThrow<string>('OPENAI_API_KEY'),
     });
@@ -51,12 +49,7 @@ export class AiService {
   async generateResponse(
     input: GenerateResponseInput,
   ): Promise<GenerateResponseResult> {
-    const tenantId = input.tenantId.trim();
     const message = input.message.trim();
-
-    if (!tenantId) {
-      throw new BadRequestException('tenantId is required');
-    }
 
     if (!message) {
       throw new BadRequestException('message is required');
@@ -78,6 +71,7 @@ export class AiService {
       message,
       context: input.context,
       history: input.history ?? [],
+      mode: input.mode ?? 'answer',
     });
 
     const completion = await this.openai.chat.completions.create({
@@ -98,8 +92,6 @@ export class AiService {
       totalTokens: completion.usage?.total_tokens ?? 0,
     };
 
-    await this.trackUsage(tenantId, usage.inputTokens, usage.outputTokens);
-
     return {
       answer: answer ?? FALLBACK_ANSWER,
       context: input.context,
@@ -111,10 +103,12 @@ export class AiService {
     message,
     context,
     history,
+    mode,
   }: {
     message: string;
     context: RagChunk[];
     history: ConversationMessage[];
+    mode?: AnswerMode;
   }): ChatCompletionMessageParam[] {
     return [
       {
@@ -124,7 +118,9 @@ export class AiService {
           'Answer only using the provided company context.',
           'If the context does not contain the answer, say you do not have enough information.',
           'Do not guess, invent policies, or use outside knowledge.',
+          'When possible, cite the context number like [Context 1].',
           'Keep answers concise, helpful, and professional.',
+          this.getModeInstruction(mode ?? 'answer'),
         ].join('\n'),
       },
       {
@@ -155,6 +151,18 @@ export class AiService {
     return `Company context:\n${chunks}`;
   }
 
+  private getModeInstruction(mode: AnswerMode): string {
+    if (mode === 'summary') {
+      return 'Mode: summary. Summarize the relevant context into clear bullets, then mention the main source context numbers.';
+    }
+
+    if (mode === 'exact') {
+      return 'Mode: exact answer. Give the shortest direct answer supported by the context. If useful, quote only a short phrase from the context.';
+    }
+
+    return 'Mode: answer. Answer the user question directly using the context.';
+  }
+
   private sanitizeHistory(
     history: ConversationMessage[],
   ): ChatCompletionMessageParam[] {
@@ -162,23 +170,5 @@ export class AiService {
       role: message.role,
       content: message.content.slice(0, MAX_HISTORY_MESSAGE_LENGTH),
     }));
-  }
-
-  private async trackUsage(
-    tenantId: string,
-    inputTokens: number,
-    outputTokens: number,
-  ): Promise<void> {
-    if (inputTokens === 0 && outputTokens === 0) {
-      return;
-    }
-
-    await this.prisma.usage.create({
-      data: {
-        tenantId,
-        inputTokens,
-        outputTokens,
-      },
-    });
   }
 }

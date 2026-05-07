@@ -8,21 +8,49 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
+import { FileTextService } from './file-text.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(ClerkAuthGuard)
 @Controller('documents')
 export class DocumentsController {
-  constructor(private readonly documents: DocumentsService) {}
+  constructor(
+    private readonly documents: DocumentsService,
+    private readonly fileText: FileTextService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(@CurrentTenant() tenantId: string, @Body() dto: CreateDocumentDto) {
     return this.documents.create(tenantId, dto);
+  }
+
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  @HttpCode(HttpStatus.CREATED)
+  async upload(
+    @CurrentTenant() tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const content = await this.fileText.extract(file);
+
+    return this.documents.create(tenantId, {
+      title: file.originalname,
+      content,
+    });
   }
 
   @Get()
