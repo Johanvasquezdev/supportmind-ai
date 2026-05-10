@@ -11,10 +11,14 @@ const valueProps = [
 export function Hero() {
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-16">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-950/50 via-background to-purple-950/50" />
-      <div className="absolute left-1/4 top-1/4 size-72 rounded-full bg-blue-600/30 blur-[110px] sm:size-96" />
-      <div className="absolute bottom-1/4 right-1/4 size-72 rounded-full bg-purple-600/30 blur-[110px] sm:size-96" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.18),transparent_42%)]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 via-background to-purple-950/20" />
+      
+      {/* Animated Gradient Blobs */}
+      <div className="animate-drift absolute -left-20 top-0 size-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
+      <div className="animate-drift-slow absolute -right-20 bottom-0 size-[600px] rounded-full bg-purple-600/10 blur-[120px]" />
+      <div className="animate-pulse-soft absolute left-1/2 top-1/2 size-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px]" />
+      
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05),transparent_70%)]" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl space-y-8 text-center">
@@ -25,7 +29,7 @@ export function Hero() {
 
           <h1 className="text-5xl font-bold tracking-normal sm:text-6xl md:text-7xl lg:text-8xl">
             <span className="mb-2 block text-foreground">Your Docs Become</span>
-            <span className="block bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text pb-2 text-transparent">
+            <span className="block bg-gradient-to-r from-blue-400 via-purple-500 to-purple-600 bg-clip-text pb-2 text-transparent">
               Your Support Agent
             </span>
           </h1>

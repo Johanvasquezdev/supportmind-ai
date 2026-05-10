@@ -94,9 +94,13 @@ export function ChatMockup() {
 
         <div className="relative mx-auto max-w-3xl">
           {/* Chat window */}
-          <div className="overflow-hidden rounded-2xl border border-blue-500/20 bg-white dark:bg-[#0d1428] shadow-2xl shadow-purple-950/30">
+          <div className="group relative overflow-hidden rounded-2xl border border-border bg-card/40 shadow-2xl shadow-purple-950/30 backdrop-blur-md">
+            {/* Highlight gradient */}
+            <div className="absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
             {/* Title bar */}
-            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-border bg-muted/50 px-6 py-4">
               <div className="flex items-center gap-4">
                 <div className="flex gap-2">
                   <span className="size-3 rounded-full bg-red-500" />
@@ -131,7 +135,7 @@ export function ChatMockup() {
                       className={`flex items-start gap-3 ${isUser ? "justify-end" : "justify-start"}`}
                     >
                       {!isUser && (
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-600">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-600 shadow-md shadow-blue-500/20">
                           <Bot className="size-4 text-white" />
                         </span>
                       )}
@@ -139,8 +143,8 @@ export function ChatMockup() {
                         <div
                           className={`rounded-2xl px-4 py-3 text-left text-sm leading-relaxed ${
                             isUser
-                              ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                              : "border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 text-black dark:text-white"
+                              ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md shadow-blue-500/10"
+                              : "border border-border bg-muted/50 text-foreground"
                           }`}
                         >
                           {message.text}
@@ -163,7 +167,7 @@ export function ChatMockup() {
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-600">
                     <Bot className="size-4 text-white" />
                   </span>
-                  <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/10 px-4 py-3">
+                  <div className="rounded-2xl border border-border bg-muted/50 px-4 py-3">
                     <div className="flex gap-1">
                       <span className="size-2 animate-bounce rounded-full bg-purple-500 dark:bg-purple-400" style={{ animationDelay: "0ms" }} />
                       <span className="size-2 animate-bounce rounded-full bg-purple-500 dark:bg-purple-400" style={{ animationDelay: "150ms" }} />
@@ -175,10 +179,10 @@ export function ChatMockup() {
             </div>
 
             {/* Input bar */}
-            <div className="border-t border-black/10 dark:border-white/10 p-4">
-              <div className="flex items-center gap-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-4 py-3 text-muted-foreground">
+            <div className="border-t border-border p-4">
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3 text-muted-foreground">
                 <span className="flex-1 text-sm">Type your message...</span>
-                <span className="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 transition-transform hover:scale-110">
+                <span className="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 transition-transform hover:scale-110 shadow-md shadow-blue-500/20">
                   <Send className="size-4 text-white" />
                 </span>
               </div>

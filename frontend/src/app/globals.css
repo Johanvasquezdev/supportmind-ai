@@ -1,31 +1,32 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
+  --background: #fcfcff;
   --foreground: oklch(0.145 0 0);
   --card: #ffffff;
   --card-foreground: oklch(0.145 0 0);
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
-  --border: rgba(0, 0, 0, 0.1);
-  --ring: oklch(0.708 0 0);
+  --muted: oklch(0.967 0.001 286);
+  --muted-foreground: oklch(0.551 0.027 264);
+  --accent: oklch(0.951 0.026 286);
+  --accent-foreground: oklch(0.145 0 0);
+  --border: oklch(0.92 0.004 286);
+  --ring: oklch(0.6 0.2 280);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.129 0.015 284); /* Deep dark purple-tinted black */
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
+  --card: oklch(0.145 0.02 284);
   --card-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --muted: oklch(0.18 0.02 284);
+  --muted-foreground: oklch(0.708 0 0.02);
+  --accent: oklch(0.25 0.05 284);
   --accent-foreground: oklch(0.985 0 0);
-  --border: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  --border: oklch(0.2 0.02 284);
+  --ring: oklch(0.55 0.2 284);
 }
 
 @theme inline {
@@ -39,8 +40,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-ring: var(--ring);
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
 }
 
 @layer base {
@@ -86,7 +87,60 @@
   animation: fade-in 0.4s ease-out both;
 }
 
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ── Ambient Background Animations ──────────────── */
+@keyframes drift {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4%, -6%) scale(1.1); }
+  66% { transform: translate(-2%, 4%) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.4; }
+}
+
+.animate-drift {
+  animation: drift 35s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-drift-slow {
+  animation: drift 45s ease-in-out infinite reverse;
+  will-change: transform;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift, .animate-drift-slow, .animate-pulse-soft {
+    animation: none !important;
+    opacity: 0.3 !important;
+  }
+}
 
 .chat-scrollbar::-webkit-scrollbar {
   width: 6px;
@@ -103,4 +157,9 @@
 
 .chat-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(124, 58, 237, 0.6);
+}
+
+/* Hide Clerk internal development badge */
+.cl-internal-b3fm6y {
+  display: none !important;
 }

@@ -51,116 +51,120 @@ export default function BillingPage() {
     ((TRIAL_DAYS_TOTAL - TRIAL_DAYS_REMAINING) / TRIAL_DAYS_TOTAL) * 100;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-sans selection:bg-purple-500/30">
       {/* Top bar */}
-      <header className="flex h-16 items-center justify-between border-b border-border bg-card/50 px-6 backdrop-blur-sm">
+      <header className="flex h-16 items-center justify-between border-b border-border bg-card/50 px-6 backdrop-blur-xl sticky top-0 z-50">
         <Link
           href="/dashboard/chat"
           className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          <span className="text-sm">Back to Dashboard</span>
+          <span className="text-xs font-bold uppercase tracking-widest">Back to Dashboard</span>
         </Link>
         <UserButton
           appearance={{
             elements: {
-              avatarBox: "size-9 border-2 border-purple-500/50",
+              avatarBox: "size-9 border-2 border-purple-500/50 rounded-[2px]",
             },
           }}
         />
       </header>
 
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
         {/* Trial status */}
-        <section className="mb-12 rounded-xl border border-border bg-card p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-purple-500/20">
-              <Clock className="size-6 text-purple-400" />
+        <section className="group relative mb-12 rounded-[2px] border border-border bg-card/50 p-8 shadow-2xl overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="flex items-start gap-6">
+            <div className="flex size-14 shrink-0 items-center justify-center rounded-[2px] bg-purple-600/10 border border-purple-500/20">
+              <Clock className="size-6 text-purple-500" />
             </div>
-            <div className="flex-1 space-y-3">
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">
-                  Free Trial
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {TRIAL_DAYS_REMAINING} days remaining out of {TRIAL_DAYS_TOTAL}
-                </p>
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-[0.2em] bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                    Free Trial
+                  </h2>
+                  <p className="text-xs font-mono text-muted-foreground mt-1">
+                    {TRIAL_DAYS_REMAINING} days remaining out of {TRIAL_DAYS_TOTAL}
+                  </p>
+                </div>
               </div>
               {/* Progress bar */}
-              <div className="h-2 w-full overflow-hidden rounded-full bg-accent">
+              <div className="h-1.5 w-full bg-muted rounded-[2px] overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
+                  className="h-full bg-purple-600 transition-all duration-700 ease-out"
                   style={{ width: `${trialProgress}%` }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Your trial includes full access to all Pro features. No credit card required.
+              <p className="text-[11px] font-sans text-muted-foreground leading-relaxed max-w-md">
+                Your trial includes full access to all Pro features. Start your transition to production-ready AI with no credit card required.
               </p>
             </div>
           </div>
         </section>
 
         {/* Plans */}
-        <section className="space-y-6">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-foreground">
+        <section className="space-y-12">
+          <div className="text-center space-y-3">
+            <h2 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600">
               Choose Your Plan
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground font-mono">
               Upgrade when you&apos;re ready. No pressure.
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-8 md:grid-cols-2">
             {plans.map((plan) => (
               <div
                 key={plan.name}
                 className={cn(
-                  "relative flex flex-col rounded-xl border p-6 transition-all",
+                  "group relative flex flex-col rounded-[2px] border p-8 transition-all duration-300",
                   plan.highlighted
-                    ? "border-purple-500/50 bg-gradient-to-b from-purple-500/5 to-transparent shadow-lg shadow-purple-500/10"
+                    ? "border-purple-500/50 bg-purple-500/5 shadow-[0_0_50px_-12px_rgba(124,58,237,0.2)]"
                     : "border-border bg-card hover:border-border/80"
                 )}
               >
+                <div className={cn(
+                  "absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent transition-opacity rounded-t-[2px]",
+                  plan.highlighted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )} />
+                
                 {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 px-3 py-1 text-xs font-medium text-white shadow-lg shadow-purple-500/25">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span className="inline-flex items-center gap-1.5 rounded-[2px] bg-purple-600 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg shadow-purple-900/40">
                       <Sparkles className="size-3" />
                       Most Popular
                     </span>
                   </div>
                 )}
 
-                <div className="mb-6 space-y-2">
-                  <h3 className="text-xl font-semibold text-foreground">
-                    {plan.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
+                <div className="mb-8 space-y-3">
+                  <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">{plan.name}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed font-sans">
                     {plan.description}
                   </p>
-                  <div className="flex items-baseline gap-1">
+                  <div className="flex items-baseline gap-1 pt-2">
                     <span className="text-4xl font-bold text-foreground">
                       {plan.price}
                     </span>
-                    <span className="text-muted-foreground">{plan.period}</span>
+                    <span className="text-xs font-mono text-muted-foreground uppercase">{plan.period}</span>
                   </div>
                 </div>
 
-                <ul className="mb-8 flex-1 space-y-3">
+                <ul className="mb-10 flex-1 space-y-4">
                   {plan.features.map((feature) => (
                     <li
                       key={feature}
-                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                      className="flex items-start gap-3 text-sm text-muted-foreground"
                     >
                       <Check
                         className={cn(
-                          "size-4 shrink-0",
-                          plan.highlighted
-                            ? "text-purple-400"
-                            : "text-green-400"
+                          "size-4 shrink-0 mt-0.5",
+                          plan.highlighted ? "text-purple-400" : "text-purple-400/60"
                         )}
                       />
-                      <span>{feature}</span>
+                      <span className="text-[13px] font-sans">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -168,19 +172,26 @@ export default function BillingPage() {
                 <Link
                   href={plan.href}
                   className={cn(
-                    "flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]",
+                    "flex w-full items-center justify-center gap-2 rounded-[2px] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] transition-all active:scale-95",
                     plan.highlighted
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-purple-500/25"
-                      : "border border-border bg-accent text-foreground hover:bg-accent/80"
+                      ? "bg-purple-600 text-white shadow-lg shadow-purple-900/20 hover:bg-purple-500"
+                      : "border border-border bg-muted text-foreground hover:bg-muted/80"
                   )}
                 >
-                  <Zap className="size-4" />
+                  <Zap className="size-3.5" />
                   {plan.cta}
                 </Link>
               </div>
             ))}
           </div>
         </section>
+
+        {/* Footer info */}
+        <div className="mt-16 pt-8 border-t border-border text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
+            Enterprise Grade Security · PCI DSS Compliant
+          </p>
+        </div>
       </div>
     </div>
   );

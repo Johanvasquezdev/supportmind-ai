@@ -17,18 +17,36 @@ model Tenant {
   documents     Document[]
   conversations Conversation[]
   usage         Usage[]
+  subscription  Subscription?
 }
 
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String?
+  phone     String?
+  clerkId   String?  @unique
   tenantId  String
   createdAt DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
+}
+
+model Subscription {
+  id                   String    @id @default(uuid())
+  tenantId             String    @unique
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  plan                 String    @default("trialing")
+  status               String    @default("trialing")
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
 }
 
 model Document {
@@ -98,13 +116,15 @@ model Message {
 }
 
 model Usage {
-  id           String   @id @default(uuid())
-  tenantId     String
-  inputTokens  Int
-  outputTokens Int
-  createdAt    DateTime @default(now())
+  id             String   @id @default(uuid())
+  tenantId       String
+  inputTokens    Int
+  outputTokens   Int
+  responseTimeMs Int?
+  createdAt      DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
+  @@index([createdAt])
 }

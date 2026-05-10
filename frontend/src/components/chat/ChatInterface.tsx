@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Trash2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,20 +99,33 @@ export default function ChatInterface({
                 )}
                 
                 <div
-                  className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-sm ${
                     message.role === 'USER'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
+                      ? 'bg-blue-600 text-white rounded-tr-none'
+                      : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-tl-none'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words">
-                    {message.content}
-                  </p>
+                  <div className="text-sm leading-relaxed">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({children}) => <p className="mb-2 last:mb-0 whitespace-pre-wrap">{children}</p>,
+                        h1: ({children}) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                        h2: ({children}) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+                        h3: ({children}) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+                        ul: ({children}) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
+                        li: ({children}) => <li className="mb-0">{children}</li>,
+                        strong: ({children}) => <strong className="font-semibold text-blue-500 dark:text-blue-400">{message.role === 'USER' ? <span className="text-white">{children}</span> : children}</strong>,
+                        code: ({children}) => <code className="bg-gray-200 dark:bg-gray-700 rounded px-1 py-0.5 font-mono text-xs">{children}</code>,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
                   <p
-                    className={`text-xs mt-1 ${
-                      message.role === 'USER'
-                        ? 'text-blue-100'
-                        : 'text-gray-500'
+                    className={`text-[10px] mt-2 opacity-60 ${
+                      message.role === 'USER' ? 'text-right' : 'text-left'
                     }`}
                   >
                     {formatDate(message.createdAt)}

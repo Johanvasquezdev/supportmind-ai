@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { verifyToken } from '@clerk/backend';
@@ -21,6 +22,8 @@ type ClerkRequest = Request & {
 
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
+  private readonly logger = new Logger(ClerkAuthGuard.name);
+
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
@@ -48,20 +51,23 @@ export class ClerkAuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid Clerk token');
       }
 
-      const tenantId = await this.resolveTenantId(userId);
+      const email = typeof verified.email === 'string' ? verified.email : `clerk-${userId}@temp.com`;
+      const tenantId = await this.resolveTenantId(userId, email);
 
       request.user = {
         authType: 'clerk',
         userId,
-        email:
-          typeof verified.email === 'string' ? verified.email : undefined,
+        email: email !== `clerk-${userId}@temp.com` ? email : undefined,
         tenantId,
       };
 
       return true;
     } catch (e) {
-      console.error('Token verification error:', e);
-      throw new UnauthorizedException('Invalid Clerk token');
+      this.logger.error('Auth Guard Error:', e);
+      if (e instanceof Error) {
+        this.logger.error(e.stack);
+      }
+      throw new UnauthorizedException('Authentication failed');
     }
   }
 
@@ -76,37 +82,65 @@ export class ClerkAuthGuard implements CanActivate {
     return token;
   }
 
-  private async resolveTenantId(userId: string): Promise<string> {
-    const configuredTenantId = this.config.get<string>('DEFAULT_TENANT_ID');
+  private async resolveTenantId(userId: string, email: string): Promise<string> {
+    // 1. Try to find the user by clerkId OR email
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { clerkId: userId },
+          { email: email }
+        ]
+      },
+      select: { tenantId: true, id: true, clerkId: true }
+    });
 
-    if (configuredTenantId) {
+    if (existingUser) {
+      // If found by email but missing clerkId, update it (Migration Case)
+      if (!existingUser.clerkId) {
+        await this.prisma.user.update({
+          where: { id: existingUser.id },
+          data: { clerkId: userId }
+        });
+      }
+      return existingUser.tenantId;
+    }
+
+    // 2. Check for DEFAULT_TENANT_ID as a fallback
+    const configuredTenantId = this.config.get<string>('DEFAULT_TENANT_ID');
+    if (configuredTenantId && configuredTenantId !== 'null' && configuredTenantId !== '') {
       const tenant = await this.prisma.tenant.findUnique({
         where: { id: configuredTenantId },
         select: { id: true },
       });
-
       if (tenant) {
+        await this.prisma.user.create({
+          data: {
+            clerkId: userId,
+            email,
+            tenantId: tenant.id,
+          },
+        });
         return tenant.id;
       }
     }
 
-    const existingTenant = await this.prisma.tenant.findFirst({
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-
-    if (existingTenant) {
-      return existingTenant.id;
-    }
-
-    const tenant = await this.prisma.tenant.create({
+    // 3. Create a new Tenant for this new User (Pure Multi-tenancy)
+    const newTenant = await this.prisma.tenant.create({
       data: {
-        name: 'Default Tenant',
-        apiKeyHash: hashApiKey(`dev-${userId}-${Date.now()}`),
+        name: `User ${userId.substring(0, 8)} Workspace`,
+        apiKeyHash: hashApiKey(`clerk-${userId}-${Date.now()}`),
       },
       select: { id: true },
     });
 
-    return tenant.id;
+    await this.prisma.user.create({
+      data: {
+        clerkId: userId,
+        email,
+        tenantId: newTenant.id,
+      },
+    });
+
+    return newTenant.id;
   }
 }

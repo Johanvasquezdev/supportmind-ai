@@ -11,7 +11,7 @@ export function SectionHeading({ eyebrow, title, highlight, subtitle }: SectionH
       {eyebrow ? <p className="mb-3 text-sm font-medium text-blue-600 dark:text-blue-300">{eyebrow}</p> : null}
       <h2 className="text-4xl font-bold tracking-normal text-foreground md:text-6xl">
         {title}{" "}
-        <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-purple-600 bg-clip-text text-transparent">
           {highlight}
         </span>
       </h2>

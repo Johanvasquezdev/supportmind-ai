@@ -21,8 +21,12 @@ export function Security() {
           {items.map(({ Icon, title, text }) => (
             <article 
               key={title} 
-              className="group rounded-2xl border border-border bg-card/70 p-8 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-purple-500/10 hover:border-purple-500/30 cursor-default"
+              className="group relative rounded-2xl border border-border bg-card/40 p-8 text-center backdrop-blur-md transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-purple-500/10 hover:border-border/80 cursor-default"
             >
+              {/* Highlight gradient */}
+              <div className="absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
               <div className="mx-auto mb-8 flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-md shadow-blue-500/20">
                 <Icon className="size-7 text-white" />
               </div>

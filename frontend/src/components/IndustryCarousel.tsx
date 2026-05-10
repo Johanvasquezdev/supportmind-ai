@@ -58,7 +58,7 @@ export function IndustryCarousel() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Built for Every <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Industry</span>
+            Built for Every <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-purple-600 bg-clip-text text-transparent">Industry</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
             Scroll to explore how SupportMind AI transforms support across different sectors
@@ -74,15 +74,19 @@ export function IndustryCarousel() {
         {industries.map(({ Icon, title, description, metric, iconBg, dotBg }) => (
           <article
             key={title}
-            className="min-w-[300px] shrink-0 snap-center rounded-2xl border border-black/5 dark:border-white/5 bg-white dark:bg-[#0d121f] p-8 shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-500/10 md:min-w-[340px]"
+            className="group relative min-w-[300px] shrink-0 snap-center rounded-2xl border border-border bg-card/40 p-8 shadow-xl backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-500/10 md:min-w-[340px]"
           >
+            {/* Highlight gradient */}
+            <div className="absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
             <div className={`mb-6 flex size-14 items-center justify-center rounded-2xl ${iconBg}`}>
               <Icon className="size-7 text-white" />
             </div>
-            <h3 className="text-xl font-semibold text-black dark:text-white">{title}</h3>
-            <p className="mt-3 text-sm leading-relaxed text-black/65 dark:text-white/65">{description}</p>
+            <h3 className="text-xl font-semibold text-foreground">{title}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{description}</p>
             <div className="mt-8">
-              <span className="inline-flex items-center gap-2 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-1.5 text-xs font-medium text-black dark:text-white">
+              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground">
                 <span className={`size-1.5 rounded-full ${dotBg}`} />
                 {metric}
               </span>

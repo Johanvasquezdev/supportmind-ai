@@ -6,8 +6,8 @@ import OpenAI from 'openai';
 // text-embedding-3-small:  1536 dimensions, $0.02 / 1M tokens
 // text-embedding-3-large:  3072 dimensions, $0.13 / 1M tokens
 // We default to "small" — good balance of cost, speed, and quality.
-const DEFAULT_MODEL = 'text-embedding-3-small';
-const DEFAULT_DIMENSIONS = 1536;
+const DEFAULT_MODEL = 'gemini-embedding-2';
+const DEFAULT_DIMENSIONS = 768;
 
 // OpenAI accepts up to 2048 inputs per request, but smaller batches are
 // safer against timeouts and rate limits.
@@ -38,6 +38,7 @@ export class EmbeddingService {
   constructor(private readonly config: ConfigService) {
     this.openai = new OpenAI({
       apiKey: this.config.getOrThrow<string>('OPENAI_API_KEY'),
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
     });
     this.model = this.config.get<string>('EMBEDDING_MODEL') ?? DEFAULT_MODEL;
     const envDim = this.config.get('EMBEDDING_DIMENSIONS');

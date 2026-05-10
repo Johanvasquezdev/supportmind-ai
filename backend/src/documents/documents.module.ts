@@ -18,6 +18,6 @@ import { FileTextService } from './file-text.service';
     FileTextService,
   ],
   // RAG module imports EmbeddingService + VectorService for query-time retrieval
-  exports: [VectorService, EmbeddingService],
+  exports: [VectorService, EmbeddingService, DocumentsService],
 })
 export class DocumentsModule {}

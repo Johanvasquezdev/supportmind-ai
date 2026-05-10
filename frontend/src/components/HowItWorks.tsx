@@ -115,8 +115,8 @@ export function HowItWorks() {
               key={step}
               className={`group relative cursor-pointer rounded-2xl border bg-card/70 p-8 shadow-xl transition-all duration-500 ${
                 activeStep === index
-                  ? "border-white/20 shadow-purple-950/30 lg:scale-[1.03]"
-                  : "border-border shadow-purple-950/10 hover:border-white/10"
+                  ? "border-border/80 shadow-purple-950/30 lg:scale-[1.03]"
+                  : "border-border shadow-purple-950/10 hover:border-border/60"
               }`}
               onClick={() => setActiveStep(index)}
               tabIndex={0}
@@ -124,6 +124,10 @@ export function HowItWorks() {
               role="button"
               aria-label={`Step ${index + 1}: ${title}`}
             >
+              {/* Highlight gradient */}
+              <div className={`absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm transition-opacity duration-300 ${activeStep === index ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
+              <div className={`absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 transition-opacity duration-300 ${activeStep === index ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
+
               {/* Glow effect */}
               <div
                 className={`absolute -inset-px rounded-2xl bg-gradient-to-br ${color} opacity-0 blur-xl transition-opacity duration-500 ${

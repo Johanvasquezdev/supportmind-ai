@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
@@ -8,6 +8,8 @@ const FALLBACK_ANSWER =
   "I don't have enough information in the provided company knowledge base to answer that.";
 const MAX_HISTORY_MESSAGES = 10;
 const MAX_HISTORY_MESSAGE_LENGTH = 4000;
+const MAX_RETRIES = 5;
+const RETRY_BASE_MS = 2000;
 
 export type AnswerMode = 'answer' | 'summary' | 'exact';
 
@@ -33,6 +35,13 @@ export interface GenerateResponseResult {
   };
 }
 
+export interface AiStreamParams {
+  message: string;
+  context: RagChunk[];
+  history?: ConversationMessage[];
+  mode?: AnswerMode;
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -42,8 +51,9 @@ export class AiService {
   constructor(private readonly config: ConfigService) {
     this.openai = new OpenAI({
       apiKey: this.config.getOrThrow<string>('OPENAI_API_KEY'),
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
     });
-    this.model = this.config.get<string>('OPENAI_CHAT_MODEL') ?? 'gpt-4o-mini';
+    this.model = this.config.get<string>('OPENAI_CHAT_MODEL') ?? 'gemini-2.0-flash';
   }
 
   async generateResponse(
@@ -74,11 +84,7 @@ export class AiService {
       mode: input.mode ?? 'answer',
     });
 
-    const completion = await this.openai.chat.completions.create({
-      model: this.model,
-      messages,
-      temperature: 0.2,
-    });
+    const completion = await this.callWithRetry(messages, 0.2);
 
     const answer = completion.choices[0]?.message?.content?.trim();
 
@@ -97,6 +103,135 @@ export class AiService {
       context: input.context,
       usage,
     };
+  }
+
+  async *streamResponse(input: AiStreamParams): AsyncGenerator<string, void, unknown> {
+    const message = input.message.trim();
+
+    if (!message) {
+      throw new BadRequestException('message is required');
+    }
+
+    if (input.context.length === 0) {
+      yield FALLBACK_ANSWER;
+      return;
+    }
+
+    const messages = this.buildMessages({
+      message,
+      context: input.context,
+      history: input.history ?? [],
+      mode: input.mode ?? 'answer',
+    });
+
+    let stream: any;
+    let lastError: Error | undefined;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        stream = await this.openai.chat.completions.create({
+          model: this.model,
+          messages,
+          temperature: 0.2,
+          stream: true,
+        });
+        break;
+      } catch (err: any) {
+        lastError = err;
+        const status = err?.status ?? err?.response?.status;
+        const isRetryable = [429, 500, 502, 503].includes(status);
+
+        if (!isRetryable || attempt === MAX_RETRIES) {
+          const friendlyMessage = status === 429 
+            ? "The AI system is currently busy (Rate Limit). Please wait a few seconds and try again."
+            : `AI stream failed: ${err.message}`;
+          this.logger.error(`OpenAI stream failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`);
+          throw new InternalServerErrorException(friendlyMessage);
+        }
+
+        const delayMs = RETRY_BASE_MS * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    if (!stream) throw lastError ?? new InternalServerErrorException('Stream initiation failed');
+
+    let totalOutputTokens = 0;
+
+    for await (const chunk of stream) {
+      const token = chunk.choices[0]?.delta?.content ?? '';
+      if (token) {
+        totalOutputTokens++;
+        yield token;
+      }
+
+      if (chunk.usage) {
+        totalOutputTokens = chunk.usage.completion_tokens ?? totalOutputTokens;
+      }
+    }
+
+    this.logger.debug(`Stream completed with ${totalOutputTokens} output tokens`);
+  }
+
+  estimateTokens(text: string): number {
+    return Math.ceil(text.length / 4);
+  }
+
+  async generateSummary(prompt: string): Promise<string> {
+    const completion = await this.callWithRetry([
+      {
+        role: 'system',
+        content: 'You are a helpful assistant that summarizes documents clearly and concisely for text-to-speech conversion.',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ], 0.3);
+
+    const summary = completion.choices[0]?.message?.content?.trim();
+    if (!summary) {
+      throw new InternalServerErrorException('Failed to generate summary');
+    }
+    return summary;
+  }
+
+  private async callWithRetry(
+    messages: ChatCompletionMessageParam[],
+    temperature: number,
+  ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await this.openai.chat.completions.create({
+          model: this.model,
+          messages,
+          temperature,
+        });
+      } catch (err: any) {
+        lastError = err;
+        const status = err?.status ?? err?.response?.status;
+        const isRetryable = [429, 500, 502, 503].includes(status);
+
+        if (!isRetryable || attempt === MAX_RETRIES) {
+          const friendlyMessage = status === 429 
+            ? "The AI system is currently busy (Rate Limit). Please wait a few seconds and try again."
+            : `AI call failed: ${err.message}`;
+          this.logger.error(
+            `OpenAI chat completion failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`,
+          );
+          throw new InternalServerErrorException(friendlyMessage);
+        }
+
+        const delayMs = RETRY_BASE_MS * Math.pow(2, attempt - 1);
+        this.logger.warn(
+          `OpenAI chat attempt ${attempt} failed (${status}), retrying in ${delayMs}ms…`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+    throw lastError ?? new InternalServerErrorException('Chat completion failed');
   }
 
   buildMessages({

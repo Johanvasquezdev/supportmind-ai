@@ -4,6 +4,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type BillingPlan = 'basic' | 'pro';
 
@@ -14,7 +15,17 @@ type CheckoutSessionResponse = {
 
 @Injectable()
 export class BillingService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
+  ) {}
+
+  async handleSuccessfulPayment(email: string, name: string, plan: string, amount: string, phone?: string) {
+    await this.notifications.sendPlanConfirmationEmail(email, name, plan, amount);
+    if (phone) {
+      await this.notifications.sendPlanActivatedSMS(phone, plan);
+    }
+  }
 
   async createCheckoutSession(input: {
     plan: BillingPlan;

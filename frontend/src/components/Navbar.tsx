@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useAuth, UserButton } from "@clerk/nextjs";
 import { Globe, Menu, Moon, Sun, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 
 const navItems = [
   { label: "Features", href: "#features" },
@@ -14,12 +15,13 @@ const navItems = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const { theme, setTheme } = useTheme();
   const { isSignedIn, isLoaded } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-  }, [isDark]);
+  useEffect(() => setMounted(true), []);
+
+  const isDark = theme === "dark";
 
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -47,7 +49,7 @@ export function Navbar() {
           <div className="hidden items-center gap-3 md:flex">
             <button
               type="button"
-              onClick={() => setIsDark((value) => !value)}
+              onClick={() => setTheme(isDark ? "light" : "dark")}
               className="rounded-lg border border-border p-2 transition-all hover:scale-105 hover:bg-accent active:scale-95"
               aria-label="Toggle theme"
             >
@@ -127,7 +129,7 @@ export function Navbar() {
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setIsDark((value) => !value)}
+                onClick={() => setTheme(isDark ? "light" : "dark")}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border p-2 transition-all hover:bg-accent"
               >
                 {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}

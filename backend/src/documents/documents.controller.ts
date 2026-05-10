@@ -68,4 +68,10 @@ export class DocumentsController {
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.documents.remove(tenantId, id);
   }
+
+  @Post(':id/retry')
+  @HttpCode(HttpStatus.OK)
+  retry(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.documents.retry(tenantId, id);
+  }
 }

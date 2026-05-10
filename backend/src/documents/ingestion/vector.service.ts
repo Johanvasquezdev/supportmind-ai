@@ -119,7 +119,7 @@ export class VectorService {
         },
       });
 
-      return response.matches.map((match) => {
+      return response.matches.flatMap((match) => {
         const metadata = match.metadata;
 
         // Defense-in-depth: verify the returned metadata actually matches
@@ -130,16 +130,16 @@ export class VectorService {
             `Tenant mismatch in Pinecone response: requested "${tenantId}", ` +
               `got "${metadata.tenantId}" for vector "${match.id}". Skipping.`,
           );
-          return null;
+          return [];
         }
 
-        return {
+        return [{
           vectorId: match.id,
           score: match.score ?? 0,
           text: metadata?.text ?? '',
           metadata: metadata ?? { tenantId, text: '' },
-        };
-      }).filter((chunk): chunk is RetrievedChunk => chunk !== null);
+        }];
+      });
     }
 
     return Array.from(this.store.values())

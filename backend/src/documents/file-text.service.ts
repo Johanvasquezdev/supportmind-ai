@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PDFParse } from 'pdf-parse';
 
 const SUPPORTED_MIME_TYPES = new Set([
   'text/plain',
@@ -19,13 +18,21 @@ export class FileTextService {
     }
 
     if (this.isPdf(file)) {
-      const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
-
       try {
-        const parsed = await parser.getText();
-        return this.cleanText(parsed.text);
-      } finally {
-        await parser.destroy();
+        const pdf = require('pdf-parse');
+        const parser = new pdf.PDFParse({ data: new Uint8Array(file.buffer) });
+        
+        try {
+          const parsed = await parser.getText();
+          return this.cleanText(parsed.text);
+        } finally {
+          // Check if destroy exists (it was in the debug methods)
+          if (typeof parser.destroy === 'function') {
+            await parser.destroy();
+          }
+        }
+      } catch (err) {
+        throw new BadRequestException(`Failed to parse PDF: ${err.message}`);
       }
     }
 

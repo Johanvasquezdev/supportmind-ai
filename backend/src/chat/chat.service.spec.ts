@@ -135,6 +135,7 @@ describe('ChatService', () => {
         tenantId: 'tenant-a',
         inputTokens: 10,
         outputTokens: 8,
+        responseTimeMs: expect.any(Number),
       },
     });
     expect(result).toEqual({

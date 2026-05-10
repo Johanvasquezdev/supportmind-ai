@@ -29,4 +29,25 @@ export class BillingController {
       email: req.user.email,
     });
   }
+
+  @Post('webhooks/stripe')
+  async handleStripeWebhook(@Body() body: any) {
+    const event = body;
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const email = session.customer_details?.email;
+      const name = session.customer_details?.name || 'Customer';
+      const plan = session.metadata?.plan || 'Standard';
+      const amount = (session.amount_total / 100).toFixed(2);
+      const currency = session.currency.toUpperCase();
+      const phone = session.customer_details?.phone;
+
+      if (email) {
+        await this.billing.handleSuccessfulPayment(email, name, plan, `${amount} ${currency}`, phone);
+      }
+    }
+
+    return { received: true };
+  }
 }

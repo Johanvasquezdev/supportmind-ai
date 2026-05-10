@@ -49,7 +49,7 @@ export function Features() {
         <div className="mb-16 text-center">
           <h2 className="mb-4 text-4xl font-bold text-foreground md:text-5xl">
             Everything You Need to{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-purple-600 bg-clip-text text-transparent">
               Scale Support
             </span>
           </h2>
@@ -74,7 +74,11 @@ function FeatureCard({ feature }: { feature: Feature }) {
   return (
     <article className="group relative">
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-600/10 to-purple-600/10 opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100" />
-      <div className="relative h-full rounded-2xl border border-border bg-card p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:border-white/20">
+      <div className="relative h-full rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-2 hover:border-border/80">
+        {/* Highlight gradient */}
+        <div className="absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        
         <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 transition-transform group-hover:scale-110">
           <Icon className="size-6 text-white" />
         </div>

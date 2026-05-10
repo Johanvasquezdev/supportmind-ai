@@ -51,7 +51,7 @@ export function Testimonials() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Loved by <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Thousands</span>
+            Loved by <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-purple-600 bg-clip-text text-transparent">Thousands</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
             See what our customers have to say about transforming their support
@@ -62,16 +62,20 @@ export function Testimonials() {
           {visibleIndices.map((index) => {
             const item = testimonials[index];
             return (
-              <article key={item.name} className="rounded-2xl border border-black/5 dark:border-white/5 bg-white dark:bg-[#0d121f] p-10 shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-500/10">
-                <Quote className="mb-6 size-10 text-blue-500/80 stroke-[1.5]" />
+              <article key={item.name} className="group relative rounded-2xl border border-border bg-card/40 p-10 shadow-xl backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-500/10">
+                {/* Highlight gradient */}
+                <div className="absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                <Quote className="mb-6 size-10 text-purple-500/80 stroke-[1.5]" />
                 <p className="text-lg leading-relaxed text-muted-foreground">{item.quote}</p>
                 <div className="mt-8 flex items-center gap-4">
-                  <span className={`flex size-12 shrink-0 items-center justify-center rounded-full ${item.color} text-sm font-bold text-white`}>
+                  <span className={`flex size-12 shrink-0 items-center justify-center rounded-full ${item.color} text-sm font-bold text-white shadow-lg`}>
                     {item.initials}
                   </span>
                   <div>
-                    <h3 className="text-base font-semibold text-black dark:text-white">{item.name}</h3>
-                    <p className="text-sm text-black/60 dark:text-white/60">{item.role}</p>
+                    <h3 className="text-base font-semibold text-foreground">{item.name}</h3>
+                    <p className="text-sm text-muted-foreground">{item.role}</p>
                   </div>
                 </div>
               </article>

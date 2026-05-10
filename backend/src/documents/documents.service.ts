@@ -39,10 +39,17 @@ export class DocumentsService {
   async findAll(tenantId: string): Promise<DocumentResponseDto[]> {
     const docs = await this.prisma.document.findMany({
       where: { tenantId },
-      select: { id: true, tenantId: true, title: true, status: true, createdAt: true },
+      include: {
+        _count: {
+          select: { chunks: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
-    return docs.map((d) => new DocumentResponseDto(d));
+    return docs.map((d) => new DocumentResponseDto({
+      ...d,
+      chunksCount: d._count.chunks,
+    }));
   }
 
   async findOne(tenantId: string, id: string): Promise<DocumentResponseDto> {
@@ -99,6 +106,31 @@ export class DocumentsService {
         `markFailed failed: document ${documentId} not found for tenant ${tenantId}`,
       );
     }
+  }
+
+  async retry(tenantId: string, id: string): Promise<DocumentResponseDto> {
+    const document = await this.prisma.document.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    // Reset status to PENDING
+    await this.prisma.document.update({
+      where: { id },
+      data: { status: 'PENDING', errorMsg: null },
+    });
+
+    // Fire-and-forget ingestion
+    this.ingestion
+      .ingest(document.id, tenantId, document.content)
+      .catch((err) =>
+        this.logger.error(`Retry ingestion failed [${document.id}]: ${err.message}`),
+      );
+
+    return new DocumentResponseDto({ ...document, status: 'PENDING', errorMsg: null });
   }
 
   async persistChunks(

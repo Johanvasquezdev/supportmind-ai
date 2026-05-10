@@ -61,17 +61,21 @@ export function FAQ() {
             return (
               <div
                 key={faq.question}
-                className={`overflow-hidden rounded-2xl border transition-colors duration-300 shadow-sm ${
+                className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm backdrop-blur-md ${
                   isOpen
-                    ? "border-blue-500/30 bg-blue-50/50 dark:bg-[#0d121f]"
-                    : "border-black/5 dark:border-white/5 bg-white dark:bg-[#0d121f]"
+                    ? "border-purple-500/30 bg-muted/40"
+                    : "border-border bg-card/40 hover:bg-muted/50"
                 }`}
               >
+                {/* Highlight gradient */}
+                <div className={`absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
+                <div className={`absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
+
                 <button
                   type="button"
                   onClick={() => toggleFaq(index)}
                   className={`flex w-full items-center justify-between p-6 text-left transition-colors duration-200 ${
-                    isOpen ? "text-blue-600 dark:text-blue-400" : "text-black dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
+                    isOpen ? "text-purple-600 dark:text-purple-400" : "text-foreground hover:text-purple-600 dark:hover:text-purple-400"
                   }`}
                 >
                   <span className="text-lg font-medium">{faq.question}</span>
