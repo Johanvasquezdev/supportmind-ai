@@ -1,4 +1,4 @@
-import { ChatMockup } from "@/components/ChatMockup";
+import { ChatDemoSection } from "@/components/ChatDemo";
 import { FAQ } from "@/components/FAQ";
 import { Features } from "@/components/Features";
 import { Footer } from "@/components/Footer";
@@ -13,11 +13,11 @@ import { Testimonials } from "@/components/Testimonials";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-background text-foreground transition-colors duration-300">
+    <main className="min-h-screen overflow-hidden bg-[#080810] text-[#F0EEE9] selection:bg-[#7c3aed]/30">
       <Navbar />
       <Hero />
-      <ChatMockup />
       <Stats />
+      <ChatDemoSection />
       <HowItWorks />
       <Features />
       <IndustryCarousel />

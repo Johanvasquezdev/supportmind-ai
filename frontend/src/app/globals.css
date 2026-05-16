@@ -17,16 +17,16 @@
 }
 
 .dark {
-  --background: oklch(0.129 0.015 284); /* Deep dark purple-tinted black */
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0.02 284);
-  --card-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.18 0.02 284);
-  --muted-foreground: oklch(0.708 0 0.02);
-  --accent: oklch(0.25 0.05 284);
-  --accent-foreground: oklch(0.985 0 0);
-  --border: oklch(0.2 0.02 284);
-  --ring: oklch(0.55 0.2 284);
+  --background: #080810;
+  --foreground: #F0EEE9;
+  --card: #0d0d1a;
+  --card-foreground: #F0EEE9;
+  --muted: #12121f;
+  --muted-foreground: #6B6A72;
+  --accent: #7c3aed;
+  --accent-foreground: #F0EEE9;
+  --border: #1a1a2e;
+  --ring: #7c3aed;
 }
 
 @theme inline {

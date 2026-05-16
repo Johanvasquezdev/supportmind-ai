@@ -67,11 +67,23 @@ interface ChatResponse {
   };
 }
 
-interface Conversation {
+interface ConversationListItem {
   id: string;
-  title?: string;
+  title: string | null;
   createdAt: string;
-  messages: Message[];
+  updatedAt: string;
+  messageCount: number;
+  lastMessage: string;
+}
+
+interface ConversationMessagesResponse {
+  conversation: { id: string; title: string | null; createdAt: string };
+  messages: Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    createdAt: string;
+  }>;
 }
 
 export default function ChatPage() {
@@ -85,7 +97,7 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"answer" | "summary" | "exact">("answer");
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(true);
   const [activeAudioMessageId, setActiveAudioMessageId] = useState<string | null>(null);
@@ -114,7 +126,7 @@ export default function ChatPage() {
 
   const fetchConversations = async () => {
     try {
-      const res = await api.get<Conversation[]>("/chat/conversations");
+      const res = await api.get<ConversationListItem[]>("/chat/conversations");
       setConversations(res.data);
     } catch (err) {
       console.error("Failed to fetch conversations", err);
@@ -138,8 +150,15 @@ export default function ChatPage() {
   const loadConversation = async (id: string) => {
     try {
       setIsLoading(true);
-      const res = await api.get<Message[]>(`/chat/conversations/${id}/messages`);
-      setMessages(res.data);
+      const res = await api.get<ConversationMessagesResponse>(`/chat/conversations/${id}/messages`);
+      setMessages(
+        res.data.messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          createdAt: m.createdAt,
+        })),
+      );
       setConversationId(id);
     } catch (err) {
       setError("Failed to load conversation history.");
@@ -419,13 +438,6 @@ export default function ChatPage() {
       )}>
         <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="flex h-8 w-8 items-center justify-center rounded-[2px] hover:bg-muted text-muted-foreground transition-colors"
-              title="Back to Home"
-            >
-              <Home size={16} />
-            </Link>
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">History</span>
           </div>
           <button
@@ -449,7 +461,7 @@ export default function ChatPage() {
               )}
             >
               <div className="text-xs font-medium truncate pr-4">
-                {conv.title || conv.messages[0]?.content?.substring(0, 40) || "New Conversation"}
+                {conv.title || conv.lastMessage?.substring(0, 40) || "New Conversation"}
               </div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1 group-hover:text-muted-foreground">
                 {new Date(conv.createdAt).toLocaleDateString()}
@@ -483,11 +495,11 @@ export default function ChatPage() {
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-6 text-center relative z-10">
               <div className="group relative flex size-16 items-center justify-center rounded-[2px] border border-border bg-card shadow-2xl overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent transition-opacity" />
+                <div className="absolute inset-x-0 top-0 h-px bg-[#1a1a2e]" />
                 <Bot className="size-8 text-purple-500" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 font-sans">
+                <h3 className="text-2xl font-bold tracking-tight text-[#F0EEE9] font-sans">
                   Hi{user?.firstName ? `, ${user.firstName}` : ""}!
                 </h3>
                 <p className="max-w-md text-muted-foreground text-sm font-sans">
@@ -511,7 +523,7 @@ export default function ChatPage() {
                         onClick={() => setInput(`Ask about ${doc.title}`)}
                         className="group relative rounded-[2px] border border-border bg-card px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground transition-all hover:border-purple-500/50 hover:text-purple-600 dark:hover:text-purple-400 active:scale-95 overflow-hidden"
                       >
-                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                        <div className="absolute inset-x-0 top-0 h-px bg-[#1a1a2e]" />
                         Ask about {doc.title.length > 20 ? `${doc.title.substring(0, 20)}...` : doc.title}
                       </button>
                     ))}

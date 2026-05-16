@@ -1,31 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 
 interface StatItem {
-  /** The number to animate to */
   numericValue: number;
-  /** Suffix like %, +, M+ */
   suffix: string;
-  /** Optional prefix like $ */
-  prefix: string;
   label: string;
-  description: string;
+  sublabel: string;
 }
 
 const stats: StatItem[] = [
-  { numericValue: 99, suffix: "%", prefix: "", label: "Customer Satisfaction", description: "Rated by 10,000+ users" },
-  { numericValue: 2, suffix: "M+", prefix: "", label: "Conversations Handled", description: "Every single month" },
-  { numericValue: 60, suffix: "%", prefix: "", label: "Cost Reduction", description: "Average savings reported" },
-  { numericValue: 24, suffix: "/7", prefix: "", label: "Always Available", description: "Never miss a customer" },
+  { numericValue: 99, suffix: "%", label: "Customer Satisfaction", sublabel: "Rated by 10,000+ users" },
+  { numericValue: 2, suffix: "M+", label: "Conversations Handled", sublabel: "Every single month" },
+  { numericValue: 60, suffix: "%", label: "Cost Reduction", sublabel: "Average savings reported" },
+  { numericValue: 24, suffix: "/7", label: "Always Available", sublabel: "Never miss a customer" },
 ];
 
-/** Easing function for smooth deceleration */
-function easeOutQuart(t: number): number {
-  return 1 - Math.pow(1 - t, 4);
-}
-
-function AnimatedNumber({ stat, isVisible }: { stat: StatItem; isVisible: boolean }) {
+function AnimatedNumber({ value, isVisible }: { value: number; isVisible: boolean }) {
   const [displayValue, setDisplayValue] = useState(0);
   const hasAnimated = useRef(false);
 
@@ -33,15 +25,17 @@ function AnimatedNumber({ stat, isVisible }: { stat: StatItem; isVisible: boolea
     if (!isVisible || hasAnimated.current) return;
     hasAnimated.current = true;
 
-    const duration = 2000; // 2 seconds
+    const duration = 2000;
     const startTime = performance.now();
 
     function animate(currentTime: number) {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const easedProgress = easeOutQuart(progress);
+      
+      // easeOutQuart
+      const easedProgress = 1 - Math.pow(1 - progress, 4);
 
-      setDisplayValue(Math.round(easedProgress * stat.numericValue));
+      setDisplayValue(Math.round(easedProgress * value));
 
       if (progress < 1) {
         requestAnimationFrame(animate);
@@ -49,15 +43,9 @@ function AnimatedNumber({ stat, isVisible }: { stat: StatItem; isVisible: boolea
     }
 
     requestAnimationFrame(animate);
-  }, [isVisible, stat.numericValue]);
+  }, [isVisible, value]);
 
-  return (
-    <p className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-6xl font-bold text-transparent md:text-7xl tabular-nums">
-      {stat.prefix}
-      {displayValue}
-      {stat.suffix}
-    </p>
-  );
+  return <span>{displayValue}</span>;
 }
 
 export function Stats() {
@@ -83,18 +71,25 @@ export function Stats() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="border-y border-border/60 py-20">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 text-center sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
-        {stats.map((stat) => (
+    <section ref={sectionRef} className="w-full bg-[#0d0d1a] border-y border-[#1a1a2e]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, idx) => (
           <div
             key={stat.label}
-            className={`transition-all duration-700 ${
-              isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            className={`px-8 py-16 text-center lg:text-left flex flex-col items-center lg:items-start justify-center border-[#1a1a2e] ${
+              idx !== stats.length - 1 ? "lg:border-r border-b lg:border-b-0" : "border-b md:border-b-0"
             }`}
           >
-            <AnimatedNumber stat={stat} isVisible={isVisible} />
-            <h3 className="mt-6 text-2xl font-semibold text-foreground">{stat.label}</h3>
-            <p className="mt-3 text-muted-foreground">{stat.description}</p>
+            <div className="font-mono text-[64px] font-bold text-[#F0EEE9] leading-none mb-4 tabular-nums">
+              <AnimatedNumber value={stat.numericValue} isVisible={isVisible} />
+              {stat.suffix}
+            </div>
+            <div className="font-sans text-[13px] font-bold text-[#F0EEE9] uppercase tracking-widest mb-1">
+              {stat.label}
+            </div>
+            <div className="font-sans text-[12px] text-[#6B6A72]">
+              {stat.sublabel}
+            </div>
           </div>
         ))}
       </div>

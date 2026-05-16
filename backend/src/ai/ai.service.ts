@@ -10,6 +10,7 @@ const MAX_HISTORY_MESSAGES = 10;
 const MAX_HISTORY_MESSAGE_LENGTH = 4000;
 const MAX_RETRIES = 5;
 const RETRY_BASE_MS = 2000;
+const GEMINI_OPENAI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/';
 
 export type AnswerMode = 'answer' | 'summary' | 'exact';
 
@@ -23,6 +24,7 @@ export interface GenerateResponseInput {
   context: RagChunk[];
   history?: ConversationMessage[];
   mode?: AnswerMode;
+  systemPromptOverride?: string;
 }
 
 export interface GenerateResponseResult {
@@ -42,6 +44,13 @@ export interface AiStreamParams {
   mode?: AnswerMode;
 }
 
+interface ApiErrorShape {
+  status?: number;
+  response?: {
+    status?: number;
+  };
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -49,11 +58,35 @@ export class AiService {
   private readonly model: string;
 
   constructor(private readonly config: ConfigService) {
+    const groqApiKey = this.config.get<string>('GROQ_API_KEY');
+    const geminiApiKey =
+      this.config.get<string>('GEMINI_API_KEY') ??
+      this.config.get<string>('GOOGLE_AI_API_KEY');
+    const openAiApiKey = this.config.get<string>('OPENAI_API_KEY');
+    
+    // Priority: Groq > Gemini > OpenAI
+    const apiKey = groqApiKey ?? geminiApiKey ?? openAiApiKey;
+
+    if (!apiKey) {
+      throw new InternalServerErrorException(
+        'AI provider API key is required (GROQ_API_KEY or GEMINI_API_KEY)',
+      );
+    }
+
     this.openai = new OpenAI({
-      apiKey: this.config.getOrThrow<string>('OPENAI_API_KEY'),
-      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+      apiKey,
+      baseURL: groqApiKey 
+        ? this.config.get<string>('GROQ_OPENAI_BASE_URL') ?? 'https://api.groq.com/openai/v1'
+        : geminiApiKey
+        ? this.config.get<string>('GEMINI_OPENAI_BASE_URL') ?? GEMINI_OPENAI_BASE_URL
+        : undefined,
     });
-    this.model = this.config.get<string>('OPENAI_CHAT_MODEL') ?? 'gemini-2.0-flash';
+
+    this.model = groqApiKey
+      ? this.config.get<string>('GROQ_CHAT_MODEL') ?? 'llama-3.3-70b-versatile'
+      : geminiApiKey
+      ? this.config.get<string>('GEMINI_CHAT_MODEL') ?? 'gemini-2.0-flash'
+      : this.config.get<string>('OPENAI_CHAT_MODEL') ?? 'gpt-4o-mini';
   }
 
   async generateResponse(
@@ -82,6 +115,7 @@ export class AiService {
       context: input.context,
       history: input.history ?? [],
       mode: input.mode ?? 'answer',
+      systemPromptOverride: input.systemPromptOverride,
     });
 
     const completion = await this.callWithRetry(messages, 0.2);
@@ -89,7 +123,7 @@ export class AiService {
     const answer = completion.choices[0]?.message?.content?.trim();
 
     if (!answer) {
-      this.logger.warn('OpenAI returned an empty response');
+      this.logger.warn('AI provider returned an empty response');
     }
 
     const usage = {
@@ -124,7 +158,7 @@ export class AiService {
       mode: input.mode ?? 'answer',
     });
 
-    let stream: any;
+    let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | undefined;
     let lastError: Error | undefined;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -136,16 +170,17 @@ export class AiService {
           stream: true,
         });
         break;
-      } catch (err: any) {
+      } catch (error) {
+        const err = this.toError(error);
         lastError = err;
-        const status = err?.status ?? err?.response?.status;
+        const status = this.getStatus(error);
         const isRetryable = [429, 500, 502, 503].includes(status);
 
         if (!isRetryable || attempt === MAX_RETRIES) {
           const friendlyMessage = status === 429 
             ? "The AI system is currently busy (Rate Limit). Please wait a few seconds and try again."
             : `AI stream failed: ${err.message}`;
-          this.logger.error(`OpenAI stream failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`);
+          this.logger.error(`AI stream failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`);
           throw new InternalServerErrorException(friendlyMessage);
         }
 
@@ -209,9 +244,10 @@ export class AiService {
           messages,
           temperature,
         });
-      } catch (err: any) {
+      } catch (error) {
+        const err = this.toError(error);
         lastError = err;
-        const status = err?.status ?? err?.response?.status;
+        const status = this.getStatus(error);
         const isRetryable = [429, 500, 502, 503].includes(status);
 
         if (!isRetryable || attempt === MAX_RETRIES) {
@@ -219,14 +255,14 @@ export class AiService {
             ? "The AI system is currently busy (Rate Limit). Please wait a few seconds and try again."
             : `AI call failed: ${err.message}`;
           this.logger.error(
-            `OpenAI chat completion failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`,
+            `AI chat completion failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`,
           );
           throw new InternalServerErrorException(friendlyMessage);
         }
 
         const delayMs = RETRY_BASE_MS * Math.pow(2, attempt - 1);
         this.logger.warn(
-          `OpenAI chat attempt ${attempt} failed (${status}), retrying in ${delayMs}ms…`,
+          `AI chat attempt ${attempt} failed (${status}), retrying in ${delayMs}ms`,
         );
         await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
@@ -234,29 +270,41 @@ export class AiService {
     throw lastError ?? new InternalServerErrorException('Chat completion failed');
   }
 
+  private getStatus(error: unknown): number {
+    const shaped = error as ApiErrorShape;
+    return shaped.status ?? shaped.response?.status ?? 0;
+  }
+
+  private toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+
   buildMessages({
     message,
     context,
     history,
     mode,
+    systemPromptOverride,
   }: {
     message: string;
     context: RagChunk[];
     history: ConversationMessage[];
     mode?: AnswerMode;
+    systemPromptOverride?: string;
   }): ChatCompletionMessageParam[] {
+    const systemContent = systemPromptOverride ?? [
+      'You are SupportMind AI, a customer support assistant.',
+      'Answer only using the provided company context.',
+      'If the context does not contain the answer, say you do not have enough information.',
+      'Do not guess, invent policies, or use outside knowledge.',
+      'When possible, cite the context number like [Context 1].',
+      'Keep answers concise, helpful, and professional.',
+      this.getModeInstruction(mode ?? 'answer'),
+    ].join('\n');
     return [
       {
         role: 'system',
-        content: [
-          'You are SupportMind AI, a customer support assistant.',
-          'Answer only using the provided company context.',
-          'If the context does not contain the answer, say you do not have enough information.',
-          'Do not guess, invent policies, or use outside knowledge.',
-          'When possible, cite the context number like [Context 1].',
-          'Keep answers concise, helpful, and professional.',
-          this.getModeInstruction(mode ?? 'answer'),
-        ].join('\n'),
+        content: systemContent,
       },
       {
         role: 'system',

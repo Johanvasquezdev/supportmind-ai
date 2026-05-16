@@ -55,7 +55,7 @@ function CheckoutContent() {
     <div className="flex min-h-screen flex-col bg-background font-sans md:flex-row selection:bg-purple-500/30">
       {/* Left Panel: Summary */}
       <div className="group relative w-full border-r border-border bg-card/50 p-8 md:w-1/2 md:p-16 lg:w-5/12 overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+        <div className="absolute inset-x-0 top-0 h-px bg-[#1a1a2e]" />
         <Link
           href="/billing"
           className="mb-12 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
@@ -79,7 +79,7 @@ function CheckoutContent() {
         <div className="space-y-6">
           <div className="flex justify-between border-b border-border pb-6">
             <div>
-              <p className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">{selectedPlan.name}</p>
+              <p className="font-bold text-[#F0EEE9]">{selectedPlan.name}</p>
               <p className="mt-1 text-xs font-mono text-muted-foreground uppercase">
                 Billed monthly
               </p>
@@ -94,11 +94,11 @@ function CheckoutContent() {
         </div>
 
         <div className="mt-12 rounded-[2px] border border-purple-500/20 bg-purple-500/5 p-6 relative overflow-hidden group/guarantee">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-400/50 to-transparent opacity-0 transition-opacity group-hover/guarantee:opacity-100" />
+          <div className="absolute inset-x-0 top-0 h-px bg-[#1a1a2e]" />
           <div className="flex gap-4">
             <ShieldCheck className="mt-0.5 size-5 shrink-0 text-purple-400" />
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-purple-400">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#F0EEE9]">
                 14-Day Money-Back Guarantee
               </p>
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
@@ -111,7 +111,7 @@ function CheckoutContent() {
 
       {/* Right Panel: Action */}
       <div className="w-full bg-background p-8 md:w-1/2 md:p-16 lg:w-7/12 relative overflow-hidden group/action">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent opacity-0 transition-opacity group-hover/action:opacity-100" />
+        <div className="absolute inset-x-0 top-0 h-px bg-[#1a1a2e]" />
         <div className="mx-auto max-w-md space-y-10">
           <div>
             <h2 className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-foreground">
@@ -123,7 +123,7 @@ function CheckoutContent() {
           </div>
 
           <div className="group relative rounded-[2px] border border-border bg-card p-6 overflow-hidden">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+            <div className="absolute inset-x-0 top-0 h-px bg-[#1a1a2e]" />
             <div className="mb-6 flex items-center gap-3">
               <CheckCircle2 className="size-5 text-purple-500" />
               <p className="text-xs font-bold uppercase tracking-widest text-foreground">What happens next</p>
@@ -158,7 +158,7 @@ function CheckoutContent() {
               "flex w-full items-center justify-center gap-3 rounded-[2px] p-5 text-center text-xs font-bold uppercase tracking-[0.2em] transition-all active:scale-95 disabled:cursor-not-allowed",
               isRedirecting
                 ? "bg-muted text-muted-foreground"
-                : "bg-purple-600 text-white shadow-lg shadow-purple-900/20 hover:bg-purple-500"
+                : "bg-[#7c3aed] text-white shadow-lg shadow-purple-900/20 hover:bg-purple-500"
             )}
           >
             {isRedirecting ? (

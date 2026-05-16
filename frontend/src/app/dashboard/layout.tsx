@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import { clerkUserProfileAppearance } from "@/lib/clerk-appearance";
 import {
   MessageSquare,
@@ -13,17 +13,22 @@ import {
   ChevronRight,
   Moon,
   Sun,
-  Home,
   BarChart3,
+  Search,
+  Code,
+  Laptop,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
 
 const sidebarLinks = [
   { label: "Chat", href: "/dashboard/chat", icon: MessageSquare },
   { label: "Documents", href: "/dashboard/documents", icon: FileText },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { label: "Widget", href: "/dashboard/settings/widget", icon: Laptop },
+  { label: "API Docs", href: "/dashboard/api-reference", icon: Code },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
   { label: "Billing", href: "/billing", icon: CreditCard },
 ];
@@ -35,10 +40,30 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { user } = useUser();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [shortcutLabel] = useState(() =>
+    typeof navigator !== "undefined" &&
+    navigator.platform.toLowerCase().includes("mac")
+      ? "⌘K"
+      : "Ctrl+K",
+  );
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div className="flex h-screen w-full flex-col bg-background font-sans text-foreground transition-colors duration-300">
@@ -53,7 +78,7 @@ export default function DashboardLayout({
           {/* Sidebar Logo */}
           <div className="flex h-16 items-center px-6">
             <Link href="/" className="flex items-center gap-3">
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-[2px] bg-gradient-to-br from-blue-600 to-purple-600 text-[18px] font-bold text-white shadow-lg">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-[2px] bg-[#7c3aed] text-[18px] font-bold text-white shadow-lg">
                 S
               </div>
               {!collapsed && (
@@ -94,27 +119,65 @@ export default function DashboardLayout({
             })}
           </nav>
 
-          {/* Sidebar Footer */}
-          <div className="space-y-1 p-3">
-            <Link
-              href="/"
+          {/* Search */}
+          <div className="border-t border-border px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
               className={cn(
-                "flex items-center gap-3 rounded-[2px] px-3 py-2 text-sm font-medium transition-all text-muted-foreground hover:bg-muted hover:text-foreground",
-                collapsed && "justify-center"
+                "flex w-full items-center rounded-[2px] px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                collapsed ? "justify-center" : "justify-between"
               )}
-              title="Back to Home"
+              aria-label="Open search"
             >
-              <Home className="size-5 shrink-0" />
-              {!collapsed && <span>Home</span>}
-            </Link>
+              <span className="flex items-center gap-3">
+                <Search className="size-5 shrink-0" />
+                {!collapsed && <span>Search</span>}
+              </span>
+              {!collapsed && (
+                <span className="font-mono text-[10px] text-[#6B6A72]">
+                  {shortcutLabel}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* User Profile */}
+          <div className="border-t border-border px-3 py-3">
+            <div className={cn(
+              "flex items-center gap-3 rounded-[2px] px-3 py-2",
+              collapsed ? "justify-center" : "justify-start"
+            )}>
+              <UserButton
+                userProfileProps={{
+                  appearance: clerkUserProfileAppearance,
+                }}
+                appearance={{
+                  elements: {
+                    avatarBox:
+                      "size-8 border-2 border-purple-500/50 rounded-[2px]",
+                  },
+                }}
+              />
+              {!collapsed && (
+                <div className="flex flex-col min-w-0 overflow-hidden">
+                  <p className="text-xs font-bold text-foreground leading-snug">
+                    {user?.fullName || "User"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
+                    {user?.primaryEmailAddress?.emailAddress}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Collapse toggle */}
-          <div className="border-t border-border p-2">
+          <div className="border-t border-border px-3 py-2">
             <button
               type="button"
               onClick={() => setCollapsed((v) => !v)}
-              className="flex w-full items-center justify-center gap-2 rounded-[2px] p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex w-full items-center justify-center gap-2 rounded-[2px] px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed ? (
@@ -154,17 +217,6 @@ export default function DashboardLayout({
                   )}
                 </button>
               )}
-              <UserButton
-                userProfileProps={{
-                  appearance: clerkUserProfileAppearance,
-                }}
-                appearance={{
-                  elements: {
-                    avatarBox:
-                      "size-9 border-2 border-purple-500/50 shadow-md rounded-[2px]",
-                  },
-                }}
-              />
             </div>
           </header>
 
@@ -174,6 +226,7 @@ export default function DashboardLayout({
           </main>
         </div>
       </div>
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }

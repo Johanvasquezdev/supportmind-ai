@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { useAuth, UserButton } from "@clerk/nextjs";
-import { Globe, Menu, Moon, Sun, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 
 const navItems = [
   { label: "Features", href: "#features" },
@@ -14,24 +12,17 @@ const navItems = [
 ];
 
 export function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isSignedIn, isLoaded, userId } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  const isDark = theme === "dark";
-
   return (
-    <nav className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#1a1a2e] bg-[#080810]/90 backdrop-blur-md">
+      <div className="mx-auto max-w-[1200px] px-6">
         <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2" aria-label="SupportMind AI home">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
-              S
-            </span>
-            <span className="text-xl font-semibold text-foreground">SupportMind AI</span>
+          <Link href="/" className="flex items-center">
+            <span className="font-sans text-base font-bold text-[#F0EEE9] tracking-tight">SupportMind</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -39,139 +30,48 @@ export function Navbar() {
               <a
                 key={item.label}
                 href={item.href}
-                className="text-muted-foreground transition-colors hover:text-foreground"
+                className="font-sans text-sm text-[#6B6A72] transition-colors hover:text-[#F0EEE9]"
               >
                 {item.label}
               </a>
             ))}
           </div>
 
-          <div className="hidden items-center gap-3 md:flex">
-            <button
-              type="button"
-              onClick={() => setTheme(isDark ? "light" : "dark")}
-              className="rounded-lg border border-border p-2 transition-all hover:scale-105 hover:bg-accent active:scale-95"
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-1 rounded-lg border border-border p-2 transition-all hover:scale-105 hover:bg-accent active:scale-95"
-              aria-label="Language selector"
-            >
-              <Globe className="size-5" />
-              <span className="text-xs font-medium">EN</span>
-            </button>
+          <div className="flex items-center gap-6">
+            <div className="hidden items-center gap-4 md:flex">
+               <span className="font-mono text-xs text-[#6B6A72] uppercase tracking-widest cursor-pointer hover:text-[#F0EEE9] transition-colors">EN</span>
+               <div className="h-4 w-px bg-[#1a1a2e]" />
+            </div>
 
             {isLoaded && !isSignedIn && (
-              <>
-                <Link
-                  href="/sign-in"
-                  className="group relative px-4 py-2 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Sign In
-                  <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-300 group-hover:w-full" />
-                </Link>
-                <Link
-                  href="/sign-up"
-                  className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 text-white transition-all hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 active:scale-95"
-                >
-                  Start Free Trial
-                </Link>
-              </>
+              <Link
+                href="/sign-up"
+                className="font-sans text-xs font-bold uppercase tracking-widest text-[#F0EEE9] border border-[#1a1a2e] px-4 py-2 hover:border-[#7c3aed] transition-colors"
+              >
+                Start Free Trial
+              </Link>
             )}
 
             {isLoaded && isSignedIn && (
-              <>
+              <div className="flex items-center gap-4">
                 <Link
                   href="/dashboard/chat"
-                  className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="font-sans text-xs font-bold uppercase tracking-widest text-[#F0EEE9] border border-[#1a1a2e] px-4 py-2 hover:border-[#7c3aed] transition-colors"
                 >
                   Dashboard
                 </Link>
-                <UserButton
+                <UserButton 
                   appearance={{
                     elements: {
-                      avatarBox: "size-9 border-2 border-purple-500/50",
-                    },
+                      avatarBox: "size-8 border border-[#1a1a2e] rounded-none",
+                    }
                   }}
                 />
-              </>
+              </div>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={() => setIsOpen((value) => !value)}
-            className="text-foreground md:hidden"
-            aria-label="Toggle navigation menu"
-            aria-expanded={isOpen}
-          >
-            {isOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-          </button>
         </div>
       </div>
-
-      {isOpen ? (
-        <div className="border-t border-border bg-background/95 backdrop-blur-xl md:hidden">
-          <div className="space-y-3 px-4 py-4">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className="block py-2 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {item.label}
-              </a>
-            ))}
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border p-2 transition-all hover:bg-accent"
-              >
-                {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-                <span className="text-sm">{isDark ? "Light" : "Dark"}</span>
-              </button>
-              <button
-                type="button"
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border p-2 transition-all hover:bg-accent"
-              >
-                <Globe className="size-5" />
-                <span className="text-sm">EN</span>
-              </button>
-            </div>
-            <div className="space-y-2 pt-4">
-              {isLoaded && !isSignedIn && (
-                <>
-                  <Link
-                    href="/sign-in"
-                    className="block w-full px-4 py-2 text-center text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/sign-up"
-                    className="block w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 text-center text-white"
-                  >
-                    Start Free Trial
-                  </Link>
-                </>
-              )}
-              {isLoaded && isSignedIn && (
-                <Link
-                  href="/dashboard/chat"
-                  className="block w-full rounded-lg border border-border px-4 py-2 text-center text-foreground transition-colors hover:bg-accent"
-                >
-                  Dashboard
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
     </nav>
   );
 }

@@ -1,90 +1,82 @@
-import type { LucideIcon } from "lucide-react";
-import { BarChart3, Brain, Clock, Globe, Shield, Zap } from "lucide-react";
+"use client";
 
-type Feature = {
-  title: string;
-  description: string;
-  Icon: LucideIcon;
-};
+import { motion } from "framer-motion";
 
-const features: Feature[] = [
+const features = [
   {
-    Icon: Brain,
-    title: "Advanced AI Understanding",
-    description: "Natural language processing that truly understands customer intent and context.",
+    id: "01",
+    title: "RAG-Powered Answers",
+    description: "Advanced natural language processing that truly understands customer intent and context using your documentation as the single source of truth.",
   },
   {
-    Icon: Clock,
+    id: "02",
     title: "24/7 Availability",
-    description: "Never miss a customer query. Instant responses at any time, any day.",
+    description: "Never miss a customer query. Instant, high-quality responses at any time, any day, across all your support channels.",
   },
   {
-    Icon: Globe,
+    id: "03",
     title: "Multi-Language Support",
-    description: "Communicate with customers in 95+ languages with perfect accuracy.",
+    description: "Communicate with customers in 95+ languages with native-level accuracy, ensuring global accessibility for your support knowledge.",
   },
   {
-    Icon: BarChart3,
+    id: "04",
     title: "Real-Time Analytics",
-    description: "Track performance, sentiment, and resolution rates with detailed insights.",
+    description: "Track performance, sentiment, and resolution rates with detailed data-driven insights to optimize your customer experience.",
   },
   {
-    Icon: Shield,
+    id: "05",
     title: "Enterprise Security",
-    description: "SOC 2 compliant with end-to-end encryption and data privacy.",
+    description: "Built with data privacy first. End-to-end encryption, strict multi-tenant isolation, and SOC 2 ready compliance standards.",
   },
   {
-    Icon: Zap,
+    id: "06",
     title: "Instant Integration",
-    description: "Connect with Slack, Discord, Email, and 50+ platforms in minutes.",
+    description: "Connect your AI agent with Slack, Discord, Email, and your existing support workflows in minutes with zero coding required.",
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="relative py-20">
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-blue-950/10 to-background" />
-
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 text-4xl font-bold text-foreground md:text-5xl">
-            Everything You Need to{" "}
-            <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-purple-600 bg-clip-text text-transparent">
-              Scale Support
-            </span>
-          </h2>
-          <p className="mx-auto max-w-2xl text-xl text-muted-foreground">
-            Powerful features that grow with your business
+    <section id="features" className="py-[120px] border-b border-[#1a1a2e]">
+      <div className="mx-auto max-w-[1200px] px-6">
+        
+        {/* Header */}
+        <div className="mb-16">
+          <h2 className="font-sans text-[48px] font-bold text-[#F0EEE9] mb-4">Everything You Need</h2>
+          <p className="font-sans text-[16px] text-[#6B6A72]">
+            Powerful features that grow with your business, from startup to enterprise.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature) => (
-            <FeatureCard key={feature.title} feature={feature} />
+        {/* Features Grid (2 column) */}
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          {features.map((feature, idx) => (
+            <motion.div
+              key={feature.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              className={`group flex items-start gap-8 p-12 border-[#1a1a2e] border-l-2 border-l-transparent hover:border-l-[#7c3aed] transition-all ${
+                idx % 2 === 0 ? "md:border-r" : ""
+              } ${
+                idx < 4 ? "border-b" : ""
+              }`}
+            >
+              <span className="font-mono text-[13px] text-[#7c3aed] mt-1 shrink-0">{feature.id}</span>
+              <div className="space-y-3">
+                <h3 className="font-sans text-[16px] font-bold text-[#F0EEE9]">
+                  {feature.title}
+                </h3>
+                <p className="font-sans text-[14px] text-[#6B6A72] leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            </motion.div>
           ))}
         </div>
+
       </div>
     </section>
-  );
-}
-
-function FeatureCard({ feature }: { feature: Feature }) {
-  const { Icon } = feature;
-
-  return (
-    <article className="group relative">
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-600/10 to-purple-600/10 opacity-0 blur-xl transition-all duration-500 group-hover:opacity-100" />
-      <div className="relative h-full rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-2 hover:border-border/80">
-        {/* Highlight gradient */}
-        <div className="absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        <div className="absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        
-        <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 transition-transform group-hover:scale-110">
-          <Icon className="size-6 text-white" />
-        </div>
-        <h3 className="mb-2 text-lg font-semibold text-foreground">{feature.title}</h3>
-        <p className="text-sm text-muted-foreground">{feature.description}</p>
-      </div>
-    </article>
   );
 }

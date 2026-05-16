@@ -81,7 +81,7 @@ export class IngestionService {
         return;
       }
 
-      // 2. Generate embeddings via OpenAI (text-embedding-3-small)
+      // 2. Generate Gemini embeddings for each chunk
       const embeddedChunks = await this.generateEmbeddings(documentId, tenantId, chunks);
 
       this.logger.log(
@@ -124,7 +124,7 @@ export class IngestionService {
 
   /**
    * For each chunk:
-   *   1. Call OpenAI text-embedding-3-small
+   *   1. Call the configured embedding model
    *   2. Build an EmbeddedChunk: { vector, text, tenantId, ... }
    *
    * This method is intentionally public so it can be unit-tested

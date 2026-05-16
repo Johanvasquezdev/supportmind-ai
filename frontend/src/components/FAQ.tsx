@@ -1,106 +1,82 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { SectionHeading } from "./SectionHeading";
+import { motion, AnimatePresence } from "framer-motion";
 
 const faqs = [
   {
     question: "How does SupportMind AI learn about my business?",
-    answer:
-      "SupportMind AI ingests your documentation, FAQs, past support tickets, and knowledge base during setup. Our advanced machine learning models then create a custom AI agent that understands your products, policies, and brand voice.",
+    answer: "SupportMind AI ingests your documentation, FAQs, past support tickets, and knowledge base during setup. Our models then create a custom AI agent that understands your products and brand voice.",
   },
   {
     question: "Can I customize the AI responses?",
-    answer: "Yes. You can tune tone, escalation rules, allowed sources, and response style.",
+    answer: "Yes. You can tune tone, escalation rules, allowed sources, and response style to match your brand requirements.",
   },
   {
     question: "What happens if the AI doesn't know the answer?",
-    answer: "It can refuse, ask for clarification, or escalate to a human based on your configured policy.",
+    answer: "The agent will refuse to hallucinate, citing only the context it has, or escalate to a human based on your configured escalation policy.",
   },
   {
     question: "Is my customer data secure?",
-    answer: "Data is isolated by tenant and protected with encryption, access controls, and audit-friendly storage patterns.",
+    answer: "Data is isolated by tenant and protected with AES-256 encryption, access controls, and audit-friendly storage patterns.",
   },
   {
     question: "How long does it take to set up?",
-    answer: "Most of our customers get their custom AI agent up and running in under 10 minutes.",
+    answer: "Most of our customers get their custom AI agent up and running in under 10 minutes — no engineering required.",
   },
   {
     question: "Can I try it before committing?",
-    answer: "Yes, we offer a 14-day free trial on all plans with full feature access.",
+    answer: "Yes, we offer a 14-day free trial on all plans with full access to all features so you can see the value immediately.",
   },
 ];
 
 export function FAQ() {
-  // Using an array of booleans to allow multiple to be open at once
-  const [openStates, setOpenStates] = useState<boolean[]>(
-    faqs.map((_, i) => i === 0) // First one open by default
-  );
-
-  const toggleFaq = (index: number) => {
-    setOpenStates((prev) => {
-      const newStates = [...prev];
-      newStates[index] = !newStates[index];
-      return newStates;
-    });
-  };
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="border-y border-border/60 py-24">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading
-          title="Frequently Asked"
-          highlight="Questions"
-          subtitle="Everything you need to know about SupportMind AI"
-        />
-        <div className="mt-16 space-y-4">
-          {faqs.map((faq, index) => {
-            const isOpen = openStates[index];
+    <section id="faq" className="py-[120px] border-b border-[#1a1a2e]">
+      <div className="mx-auto max-w-[1200px] px-6">
+        
+        {/* Header */}
+        <div className="mb-16">
+          <h2 className="font-sans text-[48px] font-bold text-[#F0EEE9] mb-4">Common Questions</h2>
+          <p className="font-sans text-[16px] text-[#6B6A72]">
+            Everything you need to know about SupportMind AI
+          </p>
+        </div>
 
-            return (
-              <div
-                key={faq.question}
-                className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 shadow-sm backdrop-blur-md ${
-                  isOpen
-                    ? "border-purple-500/30 bg-muted/40"
-                    : "border-border bg-card/40 hover:bg-muted/50"
-                }`}
+        {/* Accordion */}
+        <div className="border-t border-[#1a1a2e]">
+          {faqs.map((faq, index) => (
+            <div key={index} className="border-b border-[#1a1a2e]">
+              <button
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                className="flex w-full items-center justify-between py-6 text-left"
               >
-                {/* Highlight gradient */}
-                <div className={`absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
-                <div className={`absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
-
-                <button
-                  type="button"
-                  onClick={() => toggleFaq(index)}
-                  className={`flex w-full items-center justify-between p-6 text-left transition-colors duration-200 ${
-                    isOpen ? "text-purple-600 dark:text-purple-400" : "text-foreground hover:text-purple-600 dark:hover:text-purple-400"
-                  }`}
-                >
-                  <span className="text-lg font-medium">{faq.question}</span>
-                  <ChevronDown
-                    className={`size-5 shrink-0 transition-transform duration-300 ${
-                      isOpen ? "rotate-180" : "rotate-0 text-muted-foreground"
-                    }`}
-                  />
-                </button>
-                <div
-                  className="grid transition-all duration-300 ease-in-out"
-                  style={{
-                    gridTemplateRows: isOpen ? "1fr" : "0fr",
-                  }}
-                >
-                  <div className="overflow-hidden">
-                    <p className="px-6 pb-6 text-base leading-relaxed text-muted-foreground">
+                <span className="font-sans text-[15px] font-bold text-[#F0EEE9]">{faq.question}</span>
+                <span className="font-mono text-[20px] text-[#7c3aed]">
+                  {openIndex === index ? "−" : "+"}
+                </span>
+              </button>
+              <AnimatePresence>
+                {openIndex === index && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="pb-6 font-sans text-[14px] text-[#6B6A72] leading-relaxed max-w-[800px]">
                       {faq.answer}
                     </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
         </div>
+
       </div>
     </section>
   );

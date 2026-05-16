@@ -6,12 +6,13 @@ import { ChatService } from './chat.service';
 
 describe('ChatService', () => {
   let service: ChatService;
-  let aiService: jest.Mocked<Pick<AiService, 'generateResponse'>>;
+  let aiService: jest.Mocked<Pick<AiService, 'generateResponse' | 'estimateTokens'>>;
   let ragService: jest.Mocked<Pick<RagService, 'retrieve'>>;
   let prisma: {
     conversation: {
       create: jest.Mock;
       findFirst: jest.Mock;
+      updateMany: jest.Mock;
     };
     message: {
       create: jest.Mock;
@@ -39,6 +40,7 @@ describe('ChatService', () => {
         },
       ]),
     };
+
     aiService = {
       generateResponse: jest.fn().mockResolvedValue({
         answer: 'Refunds are available within 30 days.',
@@ -49,11 +51,15 @@ describe('ChatService', () => {
           totalTokens: 18,
         },
       }),
+      estimateTokens: jest.fn().mockReturnValue(42),
     };
+
     prisma = {
       conversation: {
         create: jest.fn().mockResolvedValue({ id: 'conversation-1' }),
         findFirst: jest.fn(),
+        // updateMany is called by setConversationTitle (non-critical, returns count)
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       message: {
         create: jest.fn((args) => args),
@@ -75,24 +81,27 @@ describe('ChatService', () => {
     );
   });
 
-  it('creates a conversation, calls AI, saves both messages, tracks usage, and returns the response', async () => {
+  // ─── sendMessage ────────────────────────────────────────────────────────────
+
+  it('creates a conversation with select, calls AI, saves both messages, tracks usage, and returns the response', async () => {
     const result = await service.sendMessage({
       tenantId: 'tenant-a',
       userId: 'user-1',
       message: 'What is the refund policy?',
     });
 
+    // Must include select: { id: true } to keep the response shape lean
     expect(prisma.conversation.create).toHaveBeenCalledWith({
-      data: {
-        tenantId: 'tenant-a',
-        userId: 'user-1',
-      },
+      data: { tenantId: 'tenant-a', userId: 'user-1' },
+      select: { id: true },
     });
+
     expect(ragService.retrieve).toHaveBeenCalledWith(
       'What is the refund policy?',
       'tenant-a',
       5,
     );
+
     expect(aiService.generateResponse).toHaveBeenCalledWith({
       message: 'What is the refund policy?',
       context: [
@@ -114,6 +123,7 @@ describe('ChatService', () => {
       ],
       mode: 'answer',
     });
+
     expect(prisma.$transaction).toHaveBeenCalledWith([
       expect.objectContaining({
         data: expect.objectContaining({
@@ -130,6 +140,7 @@ describe('ChatService', () => {
         }),
       }),
     ]);
+
     expect(prisma.usage.create).toHaveBeenCalledWith({
       data: {
         tenantId: 'tenant-a',
@@ -138,16 +149,43 @@ describe('ChatService', () => {
         responseTimeMs: expect.any(Number),
       },
     });
+
     expect(result).toEqual({
       conversationId: 'conversation-1',
       message: 'Refunds are available within 30 days.',
       context: [],
-      usage: {
-        inputTokens: 10,
-        outputTokens: 8,
-        totalTokens: 18,
-      },
+      usage: { inputTokens: 10, outputTokens: 8, totalTokens: 18 },
     });
+  });
+
+  it('auto-titles new conversations from the first message', async () => {
+    await service.sendMessage({
+      tenantId: 'tenant-a',
+      userId: 'user-1',
+      message: 'what is the refund policy for premium users?',
+    });
+
+    // updateMany should be called with the auto-generated title
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'conversation-1', tenantId: 'tenant-a', title: null }),
+        data: expect.objectContaining({ title: expect.stringMatching(/^What is the refund policy for/) }),
+      }),
+    );
+  });
+
+  it('does not auto-title when continuing an existing conversation', async () => {
+    prisma.conversation.findFirst.mockResolvedValueOnce({ id: 'conversation-2' });
+    prisma.message.findMany.mockResolvedValueOnce([]);
+
+    await service.sendMessage({
+      tenantId: 'tenant-a',
+      userId: 'user-1',
+      conversationId: 'conversation-2',
+      message: 'Hello',
+    });
+
+    expect(prisma.conversation.updateMany).not.toHaveBeenCalled();
   });
 
   it('skips usage tracking when tokens are zero', async () => {
@@ -175,15 +213,11 @@ describe('ChatService', () => {
 
     expect(ragService.retrieve).toHaveBeenCalledWith('Hello', 'tenant-a', 5);
     expect(aiService.generateResponse).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'Hello',
-      }),
+      expect.objectContaining({ message: 'Hello' }),
     );
     expect(prisma.$transaction).toHaveBeenCalledWith([
       expect.objectContaining({
-        data: expect.objectContaining({
-          content: 'Hello',
-        }),
+        data: expect.objectContaining({ content: 'Hello' }),
       }),
       expect.anything(),
     ]);
@@ -214,13 +248,8 @@ describe('ChatService', () => {
     });
 
     expect(prisma.conversation.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: 'conversation-2',
-        tenantId: 'tenant-a',
-      },
-      select: {
-        id: true,
-      },
+      where: { id: 'conversation-2', tenantId: 'tenant-a' },
+      select: { id: true },
     });
     expect(prisma.conversation.create).not.toHaveBeenCalled();
   });
@@ -240,5 +269,42 @@ describe('ChatService', () => {
     expect(aiService.generateResponse).not.toHaveBeenCalled();
     expect(ragService.retrieve).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // ─── generateTitle (private — tested via sendMessage) ──────────────────────
+
+  describe('title generation', () => {
+    const cases: Array<[string, string]> = [
+      ['what is the refund policy?', 'What is the refund policy'],
+      [
+        'a very long message that exceeds forty characters in length right here',
+        'A very long message that exceeds forty c…',
+      ],
+      ['', 'New Conversation'],
+      ['  only spaces  ', 'Only spaces'],
+    ];
+
+    it.each(cases)(
+      'generates correct title for: "%s"',
+      async (message, expectedTitlePrefix) => {
+        await service.sendMessage({
+          tenantId: 'tenant-a',
+          userId: 'user-1',
+          message: message || 'fallback',
+        });
+
+        if (message.trim()) {
+          expect(prisma.conversation.updateMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                title: expect.stringMatching(
+                  new RegExp(`^${expectedTitlePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+                ),
+              }),
+            }),
+          );
+        }
+      },
+    );
   });
 });

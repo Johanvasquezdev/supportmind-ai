@@ -73,7 +73,7 @@ export default function BillingPage() {
       <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
         {/* Trial status */}
         <section className="group relative mb-12 rounded-[2px] border border-border bg-card/50 p-8 shadow-2xl overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="absolute inset-x-0 top-0 h-px bg-[#1a1a2e]" />
           <div className="flex items-start gap-6">
             <div className="flex size-14 shrink-0 items-center justify-center rounded-[2px] bg-purple-600/10 border border-purple-500/20">
               <Clock className="size-6 text-purple-500" />
@@ -81,7 +81,7 @@ export default function BillingPage() {
             <div className="flex-1 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-bold uppercase tracking-[0.2em] bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                  <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-[#7c3aed]">
                     Free Trial
                   </h2>
                   <p className="text-xs font-mono text-muted-foreground mt-1">
@@ -106,7 +106,7 @@ export default function BillingPage() {
         {/* Plans */}
         <section className="space-y-12">
           <div className="text-center space-y-3">
-            <h2 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600">
+            <h2 className="text-3xl font-bold tracking-tight text-[#F0EEE9]">
               Choose Your Plan
             </h2>
             <p className="text-sm text-muted-foreground font-mono">
@@ -121,26 +121,19 @@ export default function BillingPage() {
                 className={cn(
                   "group relative flex flex-col rounded-[2px] border p-8 transition-all duration-300",
                   plan.highlighted
-                    ? "border-purple-500/50 bg-purple-500/5 shadow-[0_0_50px_-12px_rgba(124,58,237,0.2)]"
+                    ? "border-t-[#7c3aed] border-t-2 border-border bg-purple-500/5 shadow-[0_0_50px_-12px_rgba(124,58,237,0.2)]"
                     : "border-border bg-card hover:border-border/80"
                 )}
               >
                 <div className={cn(
-                  "absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent transition-opacity rounded-t-[2px]",
+                  "absolute inset-x-0 top-0 h-px bg-[#1a1a2e] transition-opacity rounded-t-[2px]",
                   plan.highlighted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                 )} />
                 
-                {plan.highlighted && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                    <span className="inline-flex items-center gap-1.5 rounded-[2px] bg-purple-600 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg shadow-purple-900/40">
-                      <Sparkles className="size-3" />
-                      Most Popular
-                    </span>
-                  </div>
-                )}
+
 
                 <div className="mb-8 space-y-3">
-                  <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">{plan.name}</h3>
+                  <h3 className="text-2xl font-bold text-[#F0EEE9]">{plan.name}</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed font-sans">
                     {plan.description}
                   </p>

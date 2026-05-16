@@ -10,7 +10,7 @@ import { ConfigService } from '@nestjs/config';
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 // 20 requests per 60 seconds is a sensible MVP default for an AI chat
-// endpoint. Each request costs real money (OpenAI tokens), so we want
+// endpoint. Each request costs provider tokens, so we want
 // to prevent accidental loops and abuse without blocking normal usage.
 const DEFAULT_WINDOW_MS = 60_000;   // 1 minute
 const DEFAULT_MAX_REQUESTS = 20;    // per tenant per window

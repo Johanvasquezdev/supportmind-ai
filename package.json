@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && npm run dev",
+    "dev:backend": "cd backend && npm run start:dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build": "npm run build:backend && npm run build:frontend",
     "build:backend": "cd backend && npm run build",
@@ -34,6 +34,14 @@
   ],
   "author": "Johan Gabriel Vásquez Camacho",
   "license": "MIT",
+  "overrides": {
+    "postcss": "^8.5.10",
+    "picomatch": "^4.0.4",
+    "minimatch": "^9.0.7",
+    "glob": "^11.0.0",
+    "ajv": "^8.18.0",
+    "file-type": "^21.4.0"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },

@@ -1,14 +1,15 @@
-import Link from "next/link";
-import { Check } from "lucide-react";
+"use client";
 
-// constante que describe los tipos de planes 
+import Link from "next/link";
+import { motion } from "framer-motion";
+
 const plans = [
   {
     name: "Start",
     description: "Perfect for small teams",
     price: "$49.99",
     cta: "Start Free Trial",
-    features: ["1,000 conversations/month", "Email & chat support", "Basic analytics", "5 team members", "API access"],
+    features: ["1,000 msg", "Email support", "Basic insights", "5 seats", "API access"],
   },
   {
     name: "Pro",
@@ -17,13 +18,13 @@ const plans = [
     cta: "Start Free Trial",
     featured: true,
     features: [
-      "10,000 conversations/month",
+      "10,000 msg",
       "Priority support",
-      "Advanced analytics",
-      "Unlimited team members",
-      "Custom integrations",
-      "Multi-language support",
-      "White-label option",
+      "Advanced stats",
+      "Unlimited seats",
+      "Custom RAG",
+      "Multi-lang",
+      "White-label",
     ],
   },
   {
@@ -31,84 +32,75 @@ const plans = [
     description: "For large organizations",
     price: "Custom",
     cta: "Contact Sales",
-    features: ["Unlimited conversations", "Dedicated support", "Custom AI training", "SSO & SAML", "SLA guarantees", "On-premise deployment", "Custom contracts"],
+    features: ["Unlimited msg", "Dedicated rep", "Custom model", "SSO/SAML", "SLA help", "On-prem", "Custom billing"],
   },
 ];
 
 export function Pricing() {
   return (
-    <section id="pricing" className="border-y border-border/60 py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Simple, <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Transparent Pricing</span>
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+    <section id="pricing" className="py-[120px] border-b border-[#1a1a2e]">
+      <div className="mx-auto max-w-[1200px] px-6">
+        
+        {/* Header */}
+        <div className="mb-16">
+          <h2 className="font-sans text-[48px] font-bold text-[#F0EEE9] mb-4">Simple Pricing</h2>
+          <p className="font-sans text-[16px] text-[#6B6A72]">
             Choose the perfect plan for your team. All plans include a 14-day free trial.
           </p>
         </div>
-        
-        <div className="mt-16 grid gap-8 lg:grid-cols-3 lg:items-center">
-          {plans.map((plan) => (
-            <article
+
+        {/* 3-Column Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          {plans.map((plan, idx) => (
+            <motion.article
               key={plan.name}
-              className={`relative flex flex-col rounded-3xl p-8 xl:p-10 transition-all duration-300 border border-border bg-card/40 shadow-xl backdrop-blur-md ${
-                plan.featured ? "shadow-purple-500/10 lg:py-12" : "hover:-translate-y-1"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
+              className={`flex flex-col bg-[#0d0d1a] border border-[#1a1a2e] rounded-[2px] p-8 ${
+                plan.featured ? "border-t-2 border-t-[#7c3aed]" : ""
               }`}
             >
-              {/* Highlight gradient */}
-              <div className={`absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-3xl bg-gradient-to-r from-blue-400 via-purple-500 to-transparent blur-sm transition-opacity duration-300 ${plan.featured ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
-              <div className={`absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-3xl bg-gradient-to-r from-blue-400 to-purple-600 transition-opacity duration-300 ${plan.featured ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
-              
-              {plan.featured && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg shadow-purple-900/40">
-                    <span className="size-1.5 animate-pulse rounded-full bg-white" />
-                    Most Popular
-                  </span>
-                </div>
-              )}
-              
-              <h3 className="text-2xl font-bold text-foreground">
-                {plan.name}
-              </h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {plan.description}
-              </p>
-              
-              <p className="mt-8 flex items-baseline gap-1 text-5xl font-bold tracking-tight text-foreground">
-                {plan.price}
+              <div className="mb-8">
+                <h3 className="font-sans text-[18px] font-bold text-[#F0EEE9] mb-2">{plan.name}</h3>
+                <p className="font-sans text-[13px] text-[#6B6A72]">{plan.description}</p>
+              </div>
+
+              <div className="mb-8 flex items-baseline gap-1">
+                <span className="font-sans text-[52px] font-bold text-[#F0EEE9] leading-none">{plan.price}</span>
                 {plan.price !== "Custom" && (
-                  <span className="text-lg font-normal text-muted-foreground">
-                    /month
-                  </span>
+                  <span className="font-sans text-[14px] text-[#6B6A72]">/month</span>
                 )}
-              </p>
-              
-              <ul className="mt-8 flex-1 space-y-4">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3 text-sm text-foreground/80">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-purple-600/10 text-purple-500 dark:text-purple-400">
-                      <Check className="size-3.5 stroke-[3]" />
+              </div>
+
+              <div className="flex-1 mb-8">
+                <div className="flex flex-wrap gap-2">
+                  {plan.features.map((feature) => (
+                    <span 
+                      key={feature} 
+                      className="font-mono text-[11px] text-[#6B6A72] border border-[#1a1a2e] rounded-[2px] px-2 py-1"
+                    >
+                      [ {feature} ]
                     </span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              
+                  ))}
+                </div>
+              </div>
+
               <Link
                 href={plan.cta === "Contact Sales" ? "#footer" : "/sign-up"}
-                className={`mt-10 block w-full rounded-xl px-4 py-3.5 text-center text-sm font-semibold transition-all ${
-                  plan.featured
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:shadow-purple-500/25 hover:scale-[1.02]"
-                    : "border border-border bg-muted/50 text-foreground hover:bg-muted hover:scale-[1.02]"
+                className={`w-full py-4 rounded-[2px] font-sans text-xs font-bold uppercase tracking-widest text-center transition-all ${
+                  plan.featured 
+                    ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9]" 
+                    : "border border-[#1a1a2e] text-[#F0EEE9] hover:border-[#7c3aed]"
                 }`}
               >
                 {plan.cta}
               </Link>
-            </article>
+            </motion.article>
           ))}
         </div>
+
       </div>
     </section>
   );

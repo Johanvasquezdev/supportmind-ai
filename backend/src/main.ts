@@ -2,20 +2,25 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
-import * as cors from 'cors';
+import { NestExpressApplication, ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    new ExpressAdapter(),
+  );
   const config = app.get(ConfigService);
 
-  app.use(helmet());
-  app.use(
-    cors({
-      origin: config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000',
-      credentials: true,
-    }),
-  );
+  app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'development' ? false : undefined,
+  }));
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

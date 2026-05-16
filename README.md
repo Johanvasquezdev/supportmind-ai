@@ -7,7 +7,7 @@ Companies upload support documents, the backend chunks and embeds those document
 ## What This Repo Contains
 
 - `frontend/` - Next.js + Tailwind application
-- `backend/` - NestJS API with Prisma, OpenAI, Pinecone, JWT auth, and API-key auth
+- `backend/` - NestJS API with Prisma, Gemini, Pinecone, Clerk auth, and API-key auth
 - `docker-compose.yml` - local development services
 - `.env.example` - safe example environment variables
 
@@ -24,7 +24,7 @@ User chat
   -> embed user question
   -> query Pinecone with tenant filter
   -> build grounded prompt
-  -> call OpenAI
+  -> call Gemini
   -> save conversation and messages
 ```
 
@@ -44,7 +44,7 @@ Frontend (Next.js)
 External services:
   -> Neon Postgres
   -> Pinecone
-  -> OpenAI
+  -> Google AI Studio / Gemini
   -> Clerk
   -> Stripe
 ```
@@ -92,7 +92,7 @@ All vector queries apply tenant filtering.
   - user message
   - retrieved context
   - conversation history
-- Calls OpenAI chat completions
+- Calls Gemini through the OpenAI-compatible chat API
 - Refuses to answer when no relevant context exists
 - Tracks token usage
 
@@ -119,7 +119,7 @@ All vector queries apply tenant filtering.
 | Database | Neon Postgres |
 | ORM | Prisma |
 | Vector DB | Pinecone |
-| AI | OpenAI |
+| AI | Google AI Studio / Gemini |
 | Billing | Stripe Checkout |
 
 ## Environment Variables
@@ -136,11 +136,16 @@ JWT_EXPIRES_IN="7d"
 CLERK_SECRET_KEY="your-clerk-secret-key"
 DEFAULT_TENANT_ID="optional-dev-tenant-id"
 
-OPENAI_API_KEY="your-openai-key"
-OPENAI_CHAT_MODEL="gpt-4o-mini"
+GEMINI_API_KEY="your-google-ai-studio-api-key"
+GEMINI_OPENAI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai/"
+GEMINI_CHAT_MODEL="gemini-2.0-flash"
 
-EMBEDDING_MODEL="text-embedding-3-small"
-EMBEDDING_DIMENSIONS=1536
+EMBEDDING_MODEL="gemini-embedding-001"
+EMBEDDING_DIMENSIONS=768
+
+# Optional OpenAI fallback
+OPENAI_API_KEY=""
+OPENAI_CHAT_MODEL=""
 
 PINECONE_API_KEY="your-pinecone-key"
 PINECONE_INDEX_NAME="supportmind"
@@ -166,7 +171,7 @@ CLERK_SECRET_KEY="your-clerk-secret-key"
 Create an index manually:
 
 - Name: `supportmind`
-- Dimension: `1536`
+- Dimension: `768`
 - Metric: `cosine`
 
 The dimension must match `EMBEDDING_DIMENSIONS`.
@@ -302,7 +307,7 @@ Implemented:
 
 - Multi-tenant Prisma schema
 - Document ingestion pipeline
-- OpenAI embeddings
+- Gemini embeddings
 - Pinecone vector service
 - RAG retrieval service
 - AI wrapper service

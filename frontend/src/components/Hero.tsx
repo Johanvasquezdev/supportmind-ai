@@ -1,92 +1,107 @@
-import Link from "next/link";
-import { ArrowRight, FileText, MessageSquare, Shield, Sparkles } from "lucide-react";
+"use client";
 
-const valueProps = [
-  { Icon: FileText, text: "Upload your docs" },
-  { Icon: Sparkles, text: "AI learns your business" },
-  { Icon: MessageSquare, text: "Answers from your content" },
-  { Icon: Shield, text: "No hallucinations" },
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { ChatDemo } from "./ChatDemo";
+
+const codeTokens = [
+  "Upload docs",
+  "RAG-powered",
+  "Source-cited",
+  "Zero hallucinations",
 ];
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-16">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 via-background to-purple-950/20" />
-      
-      {/* Animated Gradient Blobs */}
-      <div className="animate-drift absolute -left-20 top-0 size-[500px] rounded-full bg-blue-600/10 blur-[120px]" />
-      <div className="animate-drift-slow absolute -right-20 bottom-0 size-[600px] rounded-full bg-purple-600/10 blur-[120px]" />
-      <div className="animate-pulse-soft absolute left-1/2 top-1/2 size-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px]" />
-      
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05),transparent_70%)]" />
+    <section className="relative min-h-screen bg-[#080810] pt-32 pb-20 overflow-hidden">
+      <div className="mx-auto max-w-[1200px] px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          {/* Left Content (7 columns) */}
+          <div className="lg:col-span-7 space-y-10">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="space-y-6"
+            >
+              <h1 className="font-sans text-[48px] md:text-[80px] font-bold leading-[1.1] tracking-tight text-[#F0EEE9] text-left">
+                Your Docs.<br />
+                Your Support Agent.
+              </h1>
+              
+              <p className="font-sans text-lg md:text-xl text-[#6B6A72] max-width-[480px] leading-relaxed text-left">
+                Upload your documentation. SupportMind trains an AI that answers 
+                questions using only your verified content — accurate, instant, 24/7.
+              </p>
+            </motion.div>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl space-y-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-accent px-4 py-2 backdrop-blur-sm">
-            <Sparkles className="size-4 text-purple-400" />
-            <span className="text-sm text-muted-foreground">AI Customer Support Trained on Your Knowledge Base</span>
-          </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+              className="flex flex-wrap gap-3"
+            >
+              {codeTokens.map((token) => (
+                <span 
+                  key={token}
+                  className="font-mono text-[12px] text-[#6B6A72] border border-[#1a1a2e] rounded-[2px] px-3 py-1.5 bg-[#0d0d1a]"
+                >
+                  [ {token} ]
+                </span>
+              ))}
+            </motion.div>
 
-          <h1 className="text-5xl font-bold tracking-normal sm:text-6xl md:text-7xl lg:text-8xl">
-            <span className="mb-2 block text-foreground">Your Docs Become</span>
-            <span className="block bg-gradient-to-r from-blue-400 via-purple-500 to-purple-600 bg-clip-text pb-2 text-transparent">
-              Your Support Agent
-            </span>
-          </h1>
-
-          <p className="mx-auto max-w-3xl text-xl text-muted-foreground md:text-2xl">
-            Upload your documentation and FAQs. SupportMind trains an AI agent that answers
-            customer questions using <strong className="text-foreground">only your verified content</strong> — accurate, instant, 24/7.
-          </p>
-
-          {/* Value props row */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2 sm:gap-6">
-            {valueProps.map(({ Icon, text }) => (
-              <div
-                key={text}
-                className="flex items-center gap-2 rounded-full border border-border/50 bg-accent/50 px-4 py-2 text-sm text-muted-foreground backdrop-blur-sm"
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+              className="flex flex-col sm:flex-row items-start gap-8"
+            >
+              <Link
+                href="/sign-up"
+                className="bg-[#7c3aed] text-white font-sans text-sm font-bold uppercase tracking-widest px-8 py-4 rounded-[2px] hover:bg-[#6d28d9] transition-colors"
               >
-                <Icon className="size-4 text-purple-400" />
-                <span>{text}</span>
-              </div>
-            ))}
+                Start Free Trial
+              </Link>
+              <a 
+                href="#how-it-works"
+                className="font-sans text-sm font-bold text-[#F0EEE9] pt-4 hover:text-[#7c3aed] transition-colors"
+              >
+                See how it works ↓
+              </a>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
+              className="font-mono text-[12px] text-[#6B6A72] flex items-center gap-2"
+            >
+              <span>No credit card</span>
+              <span className="text-[#1a1a2e]">·</span>
+              <span>14-day trial</span>
+              <span className="text-[#1a1a2e]">·</span>
+              <span>10 min setup</span>
+            </motion.div>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
-            <Link
-              href="/sign-up"
-              className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-white shadow-lg shadow-purple-500/30 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/60 active:scale-95"
-            >
-              Start Free Trial
-              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <a
-              href="#how-it-works"
-              className="group relative overflow-hidden rounded-lg border border-border px-8 py-4 text-foreground backdrop-blur-sm transition-all hover:scale-105 hover:border-blue-500/50 hover:bg-accent active:scale-95"
-            >
-              <span className="relative z-10">See How It Works</span>
-              <span className="absolute inset-0 translate-y-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 transition-transform duration-300 group-hover:translate-y-0" />
-            </a>
+          {/* Right Content (5 columns) - Chat Demo */}
+          <div className="lg:col-span-5 relative">
+             <motion.div
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               transition={{ duration: 0.6, ease: "easeOut", delay: 0.4 }}
+             >
+               <ChatDemo />
+             </motion.div>
           </div>
 
-          <div className="space-y-4 pt-4">
-            <div className="flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground sm:flex-row sm:gap-8">
-              <div className="flex items-center gap-2">
-                <span className="size-2 rounded-full bg-green-500" />
-                <span>No credit card required</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="size-2 rounded-full bg-green-500" />
-                <span>14-day free trial</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="size-2 rounded-full bg-green-500" />
-                <span>Set up in under 10 minutes</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
+      
+      {/* Horizontal Rule */}
+      <div className="absolute bottom-0 w-full h-px bg-[#1a1a2e]" />
     </section>
   );
 }

@@ -8,28 +8,28 @@ datasource db {
 }
 
 model Tenant {
-  id         String   @id @default(uuid())
-  name       String
-  apiKeyHash String   @unique @map("api_key_hash")
-  createdAt  DateTime @default(now())
-
-  users         User[]
-  documents     Document[]
+  id            String         @id @default(uuid())
+  name          String
+  createdAt     DateTime       @default(now())
+  apiKeyHash    String         @unique @map("api_key_hash")
+  apiRequests   ApiRequest[]
   conversations Conversation[]
-  usage         Usage[]
+  documents     Document[]
   subscription  Subscription?
+  usage         Usage[]
+  users         User[]
+  widgetConfig  WidgetConfig?
 }
 
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String?
-  phone     String?
-  clerkId   String?  @unique
   tenantId  String
   createdAt DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  clerkId   String?  @unique
+  phone     String?
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
 }
@@ -45,71 +45,97 @@ model Subscription {
   currentPeriodEnd     DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant               Tenant    @relation(fields: [tenantId], references: [id])
 }
 
 model Document {
-  id        String         @id @default(uuid())
-  tenantId  String
-  title     String?
-  content   String
-  status    DocumentStatus @default(PENDING)
-  errorMsg  String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-
-  tenant Tenant          @relation(fields: [tenantId], references: [id])
-  chunks DocumentChunk[]
+  id              String            @id @default(uuid())
+  tenantId        String
+  title           String?
+  content         String
+  status          DocumentStatus    @default(PENDING)
+  errorMsg        String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  audioSummaryUrl String?
+  textSummary     String?
+  textSummaryAt   DateTime?
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  chunks          DocumentChunk[]
+  insights        DocumentInsight[]
+  tables          DocumentTable[]
 
   @@index([tenantId])
 }
 
 model DocumentChunk {
-  id         String   @id @default(uuid())
-  tenantId   String
-  documentId String
-  chunkIndex Int
-  text       String
-  vectorId   String
-  createdAt  DateTime @default(now())
+  id           String                   @id @default(uuid())
+  tenantId     String
+  documentId   String
+  chunkIndex   Int
+  text         String
+  vectorId     String                   @unique
+  createdAt    DateTime                 @default(now())
+  searchVector Unsupported("tsvector")? @map("search_vector")
+  document     Document                 @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  @@unique([documentId, chunkIndex])
+  @@index([tenantId])
+  @@index([documentId])
+}
+
+model DocumentTable {
+  id          String   @id @default(uuid())
+  tenantId    String
+  documentId  String
+  title       String?
+  headers     String[]
+  rows        Json
+  extractedAt DateTime @default(now())
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([documentId])
-  @@unique([documentId, chunkIndex])
-  @@unique([vectorId])
 }
 
-enum DocumentStatus {
-  PENDING
-  PROCESSING
-  READY
-  FAILED
+model DocumentInsight {
+  id          String      @id @default(uuid())
+  tenantId    String
+  documentId  String
+  type        InsightType
+  label       String
+  value       String
+  unit        String?
+  context     String?
+  extractedAt DateTime    @default(now())
+  document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([documentId])
 }
 
 model Conversation {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   tenantId  String
   userId    String
-  createdAt DateTime @default(now())
-
-  messages Message[]
-  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  createdAt DateTime  @default(now())
+  title     String?
+  updatedAt DateTime  @default(now()) @updatedAt
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  messages  Message[]
 
   @@index([tenantId])
+  @@index([tenantId, updatedAt])
 }
 
 model Message {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   tenantId       String
   conversationId String
   role           String
   content        String
-  createdAt      DateTime @default(now())
-
-  conversation Conversation @relation(fields: [conversationId], references: [id])
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
 
   @@index([tenantId])
   @@index([conversationId])
@@ -120,11 +146,82 @@ model Usage {
   tenantId       String
   inputTokens    Int
   outputTokens   Int
-  responseTimeMs Int?
   createdAt      DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  responseTimeMs Int?
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
   @@index([createdAt])
+}
+
+model WidgetSession {
+  id           String   @id @default(uuid())
+  tenantId     String
+  sessionId    String
+  messageCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  userAgent    String?
+  ipHash       String?
+
+  @@unique([tenantId, sessionId])
+  @@index([tenantId])
+}
+
+model WidgetMessage {
+  id        String   @id @default(uuid())
+  tenantId  String
+  sessionId String
+  role      String
+  content   String
+  sources   Json?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([sessionId])
+}
+
+model WidgetConfig {
+  id             String   @id @default(uuid())
+  tenantId       String   @unique
+  primaryColor   String   @default("#7c3aed")
+  position       String   @default("bottom-right")
+  placeholder    String   @default("Ask us anything...")
+  title          String   @default("Support")
+  welcomeMessage String   @default("Hi! How can I help you today?")
+  isEnabled      Boolean  @default(true)
+  allowedOrigins String[] @default([])
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model ApiRequest {
+  id           String   @id @default(uuid())
+  tenantId     String
+  endpoint     String
+  method       String
+  statusCode   Int
+  latencyMs    Int
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+enum InsightType {
+  METRIC
+  FACT
+  DATE
+  PERSON
+  PROCESS
+  REQUIREMENT
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
 }

@@ -1,82 +1,81 @@
+"use client";
+
 import Link from "next/link";
-import { Github, Linkedin, Mail, Twitter } from "lucide-react";
 
-const footerSections = [
-  { title: "Product", links: ["Features", "Pricing", "Security", "Integrations", "Changelog"] },
-  { title: "Company", links: ["About", "Blog", "Careers", "Press Kit", "Partners"] },
-  { title: "Resources", links: ["Documentation", "API Reference", "Community", "Support", "Status"] },
-  { title: "Legal", links: ["Privacy", "Terms", "Cookie Policy", "Licenses", "GDPR"] },
-];
-
-const socialLinks = [
-  { label: "Twitter", Icon: Twitter },
-  { label: "GitHub", Icon: Github },
-  { label: "LinkedIn", Icon: Linkedin },
-  { label: "Email", Icon: Mail },
+const links = [
+  { label: "Features", href: "#features" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Security", href: "#security" },
+  { label: "Industries", href: "#industries" },
+  { label: "FAQ", href: "#faq" },
 ];
 
 export function Footer() {
   return (
-    <footer id="footer" className="relative border-t border-border bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-12 grid gap-8 md:grid-cols-2 lg:grid-cols-6">
-          <div className="lg:col-span-2">
-            <Link href="/" className="mb-4 flex items-center gap-2" aria-label="SupportMind AI home">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
-                S
-              </span>
-              <span className="text-xl font-semibold text-foreground">SupportMind AI</span>
+    <footer id="footer" className="bg-[#080810] py-[100px] border-t border-[#1a1a2e]">
+      <div className="mx-auto max-w-[1200px] px-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
+          
+          {/* Logo & Copyright (4 columns) */}
+          <div className="md:col-span-4 space-y-6">
+            <Link href="/" className="font-sans text-base font-bold text-[#F0EEE9] tracking-tight">
+              SupportMind
             </Link>
-            <p className="mb-6 max-w-sm text-muted-foreground">
-              Transforming customer support with AI-powered conversations that understand, learn,
-              and resolve.
-            </p>
-            <div className="flex items-center gap-4">
-              {socialLinks.map(({ label, Icon }) => (
-                <a
-                  key={label}
-                  href="#"
-                  aria-label={label}
-                  className="flex size-10 items-center justify-center rounded-lg border border-border bg-accent text-muted-foreground transition-all hover:border-white/20 hover:text-foreground"
-                >
-                  <Icon className="size-5" />
-                </a>
-              ))}
+            <div className="space-y-2">
+              <p className="font-sans text-[13px] text-[#6B6A72]">
+                SupportMind AI © 2026. All rights reserved.
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-[#22c55e]" />
+                <span className="font-mono text-[11px] text-[#6B6A72] uppercase tracking-wider">
+                  Operational
+                </span>
+              </div>
             </div>
           </div>
 
-          {footerSections.map((section) => (
-            <div key={section.title}>
-              <h3 className="mb-4 font-semibold text-foreground">{section.title}</h3>
+          {/* Links (4 columns) */}
+          <div className="md:col-span-4 grid grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h4 className="font-mono text-[11px] font-bold text-[#6B6A72] uppercase tracking-widest">Product</h4>
               <ul className="space-y-3">
-                {section.links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      {link}
+                {links.slice(0, 3).map((l) => (
+                  <li key={l.label}>
+                    <a href={l.href} className="font-sans text-[13px] text-[#6B6A72] hover:text-[#F0EEE9] transition-colors">
+                      {l.label}
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
-          <p className="text-sm text-muted-foreground">© 2026 SupportMind AI. All rights reserved.</p>
-          <div className="flex flex-wrap items-center justify-center gap-6">
-            <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-              Privacy Policy
-            </a>
-            <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-              Terms of Service
-            </a>
-            <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-              Cookie Settings
-            </a>
+            <div className="space-y-4">
+              <h4 className="font-mono text-[11px] font-bold text-[#6B6A72] uppercase tracking-widest">Company</h4>
+              <ul className="space-y-3">
+                {links.slice(3).map((l) => (
+                  <li key={l.label}>
+                    <a href={l.href} className="font-sans text-[13px] text-[#6B6A72] hover:text-[#F0EEE9] transition-colors">
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
+
+          {/* CTA (4 columns) */}
+          <div className="md:col-span-4 space-y-6">
+            <h3 className="font-sans text-[20px] font-bold text-[#F0EEE9]">Ready to scale?</h3>
+            <p className="font-sans text-[14px] text-[#6B6A72] leading-relaxed">
+              Start your 14-day free trial today. No credit card required.
+            </p>
+            <Link
+              href="/sign-up"
+              className="inline-block bg-[#7c3aed] text-white font-sans text-xs font-bold uppercase tracking-widest px-8 py-4 rounded-[2px] hover:bg-[#6d28d9] transition-colors"
+            >
+              Get Started
+            </Link>
+          </div>
+
         </div>
       </div>
     </footer>

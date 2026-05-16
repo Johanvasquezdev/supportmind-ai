@@ -32,10 +32,10 @@ describe('AiService', () => {
     service = new AiService(
       {
         get: jest.fn().mockImplementation((key: string) => {
-          if (key === 'OPENAI_CHAT_MODEL') return 'gpt-4o-mini';
+          if (key === 'GEMINI_API_KEY') return 'test-gemini-key';
+          if (key === 'GEMINI_CHAT_MODEL') return 'gemini-2.0-flash';
           return undefined;
         }),
-        getOrThrow: jest.fn().mockReturnValue('test-openai-key'),
       } as unknown as ConfigService,
     );
 
@@ -48,7 +48,7 @@ describe('AiService', () => {
     };
   });
 
-  it('builds a grounded prompt, calls OpenAI, and returns the response', async () => {
+  it('builds a grounded prompt, calls the AI provider, and returns the response', async () => {
     const result = await service.generateResponse({
       message: 'Can I get a refund?',
       context,
@@ -57,7 +57,7 @@ describe('AiService', () => {
 
     expect(createCompletion).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'gpt-4o-mini',
+        model: 'gemini-2.0-flash',
         temperature: 0.2,
         messages: expect.arrayContaining([
           expect.objectContaining({

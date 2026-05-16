@@ -1,56 +1,58 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
 
-// ─── Model configuration ────────────────────────────────────────────────────
-// text-embedding-3-small:  1536 dimensions, $0.02 / 1M tokens
-// text-embedding-3-large:  3072 dimensions, $0.13 / 1M tokens
-// We default to "small" — good balance of cost, speed, and quality.
-const DEFAULT_MODEL = 'gemini-embedding-2';
+const DEFAULT_MODEL = 'gemini-embedding-001';
 const DEFAULT_DIMENSIONS = 768;
-
-// OpenAI accepts up to 2048 inputs per request, but smaller batches are
-// safer against timeouts and rate limits.
 const MAX_BATCH_SIZE = 100;
-
-// Simple exponential-backoff retry for transient 429 / 5xx errors.
 const MAX_RETRIES = 3;
 const RETRY_BASE_MS = 1000;
+const GEMINI_EMBEDDING_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export interface EmbeddingResult {
-  /** The input text that was embedded. */
   text: string;
-  /** The dense vector representation (float[]). */
   vector: number[];
-  /** Dimensionality of the vector. */
   dimensions: number;
-  /** Model used to generate the embedding. */
   model: string;
+}
+
+interface GeminiEmbeddingResponse {
+  embedding?: {
+    values?: number[];
+  };
+}
+
+interface ApiErrorShape {
+  status?: number;
+  response?: {
+    status?: number;
+  };
 }
 
 @Injectable()
 export class EmbeddingService {
   private readonly logger = new Logger(EmbeddingService.name);
-  private readonly openai: OpenAI;
+  private readonly apiKey: string;
   readonly model: string;
   readonly dimensions: number;
 
   constructor(private readonly config: ConfigService) {
-    this.openai = new OpenAI({
-      apiKey: this.config.getOrThrow<string>('OPENAI_API_KEY'),
-      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
-    });
+    const apiKey =
+      this.config.get<string>('GEMINI_API_KEY') ??
+      this.config.get<string>('GOOGLE_AI_API_KEY');
+
+    if (!apiKey) {
+      throw new InternalServerErrorException(
+        'GEMINI_API_KEY is required for document embeddings',
+      );
+    }
+
+    const envDimensions = this.config.get<string | number>('EMBEDDING_DIMENSIONS');
+
+    this.apiKey = apiKey;
     this.model = this.config.get<string>('EMBEDDING_MODEL') ?? DEFAULT_MODEL;
-    const envDim = this.config.get('EMBEDDING_DIMENSIONS');
-    this.dimensions = envDim ? parseInt(String(envDim), 10) : DEFAULT_DIMENSIONS;
+    this.dimensions = Number(envDimensions ?? DEFAULT_DIMENSIONS);
   }
 
-  // ─── Public API ──────────────────────────────────────────────────────────
-
-  /**
-   * Embed multiple texts in batches.
-   * Returns raw vectors in the same order as the input texts.
-   */
   async embedMany(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) return [];
 
@@ -71,74 +73,99 @@ export class EmbeddingService {
     return allVectors;
   }
 
-  /**
-   * Embed a single text string.
-   */
   async embedOne(text: string): Promise<number[]> {
     const [vector] = await this.embedMany([text]);
     return vector;
   }
 
-  /**
-   * Embed texts and return rich EmbeddingResult objects containing the
-   * vector, source text, model, and dimensionality metadata.
-   *
-   * This is the primary method used by the ingestion pipeline.
-   */
   async embedWithMetadata(texts: string[]): Promise<EmbeddingResult[]> {
     const vectors = await this.embedMany(texts);
 
-    return texts.map((text, i) => ({
+    return texts.map((text, index) => ({
       text,
-      vector: vectors[i],
+      vector: vectors[index],
       dimensions: this.dimensions,
       model: this.model,
     }));
   }
 
-  // ─── Internals ───────────────────────────────────────────────────────────
-
-  /**
-   * Calls the OpenAI embeddings endpoint with simple exponential-backoff
-   * retry for transient failures (429, 500, 502, 503).
-   */
   private async callWithRetry(batch: string[]): Promise<number[][]> {
     let lastError: Error | undefined;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const response = await this.openai.embeddings.create({
-          model: this.model,
-          input: batch,
-          dimensions: this.dimensions,
-        });
+        const vectors: number[][] = [];
 
-        // Sort by index to guarantee order matches input
-        return response.data
-          .sort((a, b) => a.index - b.index)
-          .map((d) => d.embedding);
-      } catch (err: any) {
+        for (const text of batch) {
+          vectors.push(await this.embedText(text));
+        }
+
+        return vectors;
+      } catch (error) {
+        const err = this.toError(error);
         lastError = err;
-        const status = err?.status ?? err?.response?.status;
-        const isRetryable = [429, 500, 502, 503].includes(status);
+        const status = this.getStatus(error);
+        const isRetryable = [429, 500, 502, 503].includes(status ?? 0);
 
         if (!isRetryable || attempt === MAX_RETRIES) {
           this.logger.error(
-            `OpenAI embedding failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`,
+            `Gemini embedding failed (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`,
           );
           throw err;
         }
 
         const delayMs = RETRY_BASE_MS * Math.pow(2, attempt - 1);
         this.logger.warn(
-          `OpenAI embedding attempt ${attempt} failed (${status}), retrying in ${delayMs}ms…`,
+          `Gemini embedding attempt ${attempt} failed (${status}), retrying in ${delayMs}ms`,
         );
         await this.sleep(delayMs);
       }
     }
 
-    // Should never reach here, but satisfies TypeScript
     throw lastError ?? new InternalServerErrorException('Embedding failed');
+  }
+
+  private async embedText(text: string): Promise<number[]> {
+    const response = await fetch(
+      `${GEMINI_EMBEDDING_BASE_URL}/${this.model}:embedContent?key=${this.apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: {
+            parts: [{ text }],
+          },
+          outputDimensionality: this.dimensions,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const body = await response.text();
+      const error = new Error(body || response.statusText);
+      (error as ApiErrorShape).status = response.status;
+      throw error;
+    }
+
+    const body = (await response.json()) as GeminiEmbeddingResponse;
+    const vector = body.embedding?.values;
+
+    if (!vector || vector.length === 0) {
+      throw new InternalServerErrorException('Gemini returned an empty embedding');
+    }
+
+    return vector;
+  }
+
+  private getStatus(error: unknown): number | undefined {
+    const shaped = error as ApiErrorShape;
+    return shaped.status ?? shaped.response?.status;
+  }
+
+  private toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
   }
 
   private sleep(ms: number): Promise<void> {

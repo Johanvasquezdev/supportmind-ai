@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { DocumentsModule } from '../documents/documents.module';
 import { RagService } from './rag.service';
+import { SearchModule } from '../search/search.module';
 
 @Module({
-  imports: [DocumentsModule],
+  imports: [SearchModule],
   providers: [RagService],
   exports: [RagService],
 })

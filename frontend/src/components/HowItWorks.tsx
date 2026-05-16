@@ -1,61 +1,38 @@
 "use client";
 
-import {
-  Upload,
-  Cpu,
-  MessageSquare,
-  CheckCircle2,
-  ArrowRight,
-  FileText,
-  Brain,
-  Search,
-  Sparkles,
-} from "lucide-react";
-import { SectionHeading } from "./SectionHeading";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const steps = [
   {
-    Icon: Upload,
     step: "01",
     title: "Upload Your Documents",
-    description:
-      "Paste or upload your company knowledge — FAQs, support policies, product guides, onboarding docs. Any text content your support team uses daily.",
-    details: [
-      { Icon: FileText, text: "Paste plain text or documentation" },
-      { Icon: CheckCircle2, text: "No file format restrictions" },
-      { Icon: Sparkles, text: "Process multiple documents at once" },
+    description: "Paste or upload your company knowledge — FAQs, support policies, product guides, onboarding docs. Any text content your support team uses daily.",
+    features: [
+      "Paste plain text or documentation",
+      "No file format restrictions",
+      "Process multiple documents at once",
     ],
-    color: "from-blue-500 to-cyan-400",
-    glowColor: "blue",
   },
   {
-    Icon: Cpu,
     step: "02",
     title: "AI Learns Your Business",
-    description:
-      "SupportMind automatically splits your content into smart chunks, generates semantic embeddings, and indexes everything for instant retrieval.",
-    details: [
-      { Icon: Brain, text: "Sentence-aware chunking preserves meaning" },
-      { Icon: Search, text: "Vector embeddings enable semantic search" },
-      { Icon: CheckCircle2, text: "Processing happens in the background" },
+    description: "SupportMind automatically splits your content into smart chunks, generates semantic embeddings, and indexes everything for instant retrieval.",
+    features: [
+      "Sentence-aware chunking preserves meaning",
+      "Vector embeddings enable semantic search",
+      "Processing happens in the background",
     ],
-    color: "from-purple-500 to-pink-400",
-    glowColor: "purple",
   },
   {
-    Icon: MessageSquare,
     step: "03",
     title: "Chat With Your AI Agent",
-    description:
-      "Ask questions in natural language. The AI retrieves the most relevant sections from your docs and answers using only your verified content — no hallucinations.",
-    details: [
-      { Icon: Sparkles, text: "Answers grounded in your documentation" },
-      { Icon: Brain, text: "Understands context and follow-up questions" },
-      { Icon: CheckCircle2, text: "Cites sources from your knowledge base" },
+    description: "Ask questions in natural language. The AI retrieves the most relevant sections from your docs and answers using only your verified content — no hallucinations.",
+    features: [
+      "Answers grounded in your documentation",
+      "Understands context and follow-up questions",
+      "Cites sources from your knowledge base",
     ],
-    color: "from-emerald-500 to-teal-400",
-    glowColor: "emerald",
   },
 ];
 
@@ -63,136 +40,147 @@ export function HowItWorks() {
   const [activeStep, setActiveStep] = useState(0);
 
   return (
-    <section id="how-it-works" className="relative py-28">
-      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-purple-950/20 to-transparent" />
+    <section id="how-it-works" className="py-[120px] border-b border-[#1a1a2e]">
+      <div className="mx-auto max-w-[1200px] px-6">
+        
+        {/* Header */}
+        <div className="mb-16">
+          <h2 className="font-sans text-[48px] font-bold text-[#F0EEE9] mb-4">How It Works</h2>
+          <p className="font-sans text-[16px] text-[#6B6A72]">
+            From zero to AI-powered support in under 10 minutes. No training required.
+          </p>
+        </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading
-          title="How to Use"
-          highlight="SupportMind AI"
-          subtitle="From zero to AI-powered support in under 10 minutes. No training required."
-        />
-
-        {/* Step indicators */}
-        <div className="mb-16 flex items-center justify-center gap-4">
-          {steps.map((step, index) => (
+        {/* Step Navigation */}
+        <div className="flex gap-12 mb-20 border-b border-[#1a1a2e]">
+          {steps.map((s, i) => (
             <button
-              key={step.step}
-              type="button"
-              onClick={() => setActiveStep(index)}
-              className={`group flex items-center gap-3 rounded-full border px-5 py-2.5 transition-all duration-300 ${
-                activeStep === index
-                  ? "scale-105 border-white/20 bg-white/10 shadow-lg"
-                  : "border-border hover:border-white/10 hover:bg-white/5"
+              key={s.step}
+              onClick={() => setActiveStep(i)}
+              className={`pb-4 font-mono text-sm transition-all relative ${
+                activeStep === i ? "text-[#F0EEE9]" : "text-[#6B6A72] hover:text-[#F0EEE9]"
               }`}
             >
-              <span
-                className={`flex size-7 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                  activeStep === index
-                    ? "bg-gradient-to-br from-blue-500 to-purple-500 text-white"
-                    : "bg-accent text-muted-foreground"
-                }`}
-              >
-                {index + 1}
-              </span>
-              <span
-                className={`hidden text-sm font-medium sm:block ${
-                  activeStep === index
-                    ? "text-foreground"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {step.title.split(" ").slice(0, 2).join(" ")}
-              </span>
+              {s.step}
+              {activeStep === i && (
+                <motion.div 
+                  layoutId="activeTab"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#7c3aed]" 
+                />
+              )}
             </button>
           ))}
         </div>
 
-        {/* Step cards — always all visible on desktop, tabs on mobile */}
-        <div className="grid gap-8 lg:grid-cols-3">
-          {steps.map(({ Icon, step, title, description, details, color, glowColor }, index) => (
-            <article
-              key={step}
-              className={`group relative cursor-pointer rounded-2xl border bg-card/70 p-8 shadow-xl transition-all duration-500 ${
-                activeStep === index
-                  ? "border-border/80 shadow-purple-950/30 lg:scale-[1.03]"
-                  : "border-border shadow-purple-950/10 hover:border-border/60"
-              }`}
-              onClick={() => setActiveStep(index)}
-              tabIndex={0}
-              onKeyDown={(e) => e.key === "Enter" && setActiveStep(index)}
-              role="button"
-              aria-label={`Step ${index + 1}: ${title}`}
+        {/* Step Content */}
+        <div className="relative min-h-[400px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeStep}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
             >
-              {/* Highlight gradient */}
-              <div className={`absolute inset-x-0 -top-px mx-auto h-1 w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 via-purple-400 to-transparent blur-sm transition-opacity duration-300 ${activeStep === index ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
-              <div className={`absolute inset-x-0 -top-px mx-auto h-[2px] w-2/3 rounded-t-2xl bg-gradient-to-r from-blue-400 to-purple-400 transition-opacity duration-300 ${activeStep === index ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
-
-              {/* Glow effect */}
-              <div
-                className={`absolute -inset-px rounded-2xl bg-gradient-to-br ${color} opacity-0 blur-xl transition-opacity duration-500 ${
-                  activeStep === index ? "opacity-20" : "group-hover:opacity-10"
-                }`}
-              />
-
+              {/* Left Column */}
               <div className="relative">
-                {/* Step number + icon */}
-                <div className="mb-6 flex items-center justify-between">
-                  <div
-                    className={`flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br ${color} shadow-lg transition-transform duration-300 group-hover:scale-110`}
-                  >
-                    <Icon className="size-7 text-white" />
-                  </div>
-                  <span className="text-5xl font-black text-white/[0.04]">
-                    {step}
-                  </span>
+                <div className="absolute -top-24 -left-12 font-mono text-[160px] font-bold text-[#12121f] select-none z-0">
+                  {steps[activeStep].step}
                 </div>
-
-                {/* Content */}
-                <h3 className="mb-3 text-xl font-semibold text-foreground">
-                  {title}
-                </h3>
-                <p className="mb-6 text-[15px] leading-relaxed text-muted-foreground">
-                  {description}
-                </p>
-
-                {/* Detail bullets */}
-                <ul className="space-y-3">
-                  {details.map(({ Icon: DetailIcon, text }) => (
-                    <li key={text} className="flex items-start gap-3">
-                      <DetailIcon className="mt-0.5 size-4 shrink-0 text-purple-400" />
-                      <span className="text-sm text-muted-foreground">
-                        {text}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="relative z-10 space-y-6">
+                  <h3 className="font-sans text-[28px] font-bold text-[#F0EEE9]">
+                    {steps[activeStep].title}
+                  </h3>
+                  <p className="font-sans text-[16px] text-[#6B6A72] leading-relaxed max-w-[440px]">
+                    {steps[activeStep].description}
+                  </p>
+                  <ul className="space-y-4 pt-4">
+                    {steps[activeStep].features.map((f, idx) => (
+                      <li key={idx} className="font-sans text-sm text-[#6B6A72] flex items-center gap-3">
+                        <span className="text-[#7c3aed]">→</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
 
-              {/* Arrow connector (hidden on last card) */}
-              {index < steps.length - 1 ? (
-                <div className="absolute -right-5 top-1/2 z-10 hidden -translate-y-1/2 lg:block">
-                  <ArrowRight className="size-5 text-muted-foreground/30" />
-                </div>
-              ) : null}
-            </article>
-          ))}
+              {/* Right Column (Illustration) */}
+              <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-[2px] p-12 flex items-center justify-center min-h-[360px]">
+                {activeStep === 0 && <Step1Illustration />}
+                {activeStep === 1 && <Step2Illustration />}
+                {activeStep === 2 && <Step3Illustration />}
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        {/* Bottom CTA */}
-        <div className="mt-16 text-center">
-          <p className="mb-6 text-lg text-muted-foreground">
-            That&apos;s it. No complex setup, no ML expertise needed.
-          </p>
-          <a
-            href="/register"
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-white shadow-lg shadow-purple-500/30 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 active:scale-95"
-          >
-            Start Free Trial
-            <ArrowRight className="size-5" />
-          </a>
-        </div>
       </div>
     </section>
+  );
+}
+
+function Step1Illustration() {
+  return (
+    <div className="w-full max-w-[200px] space-y-3">
+      {[0, 1, 2, 3].map((i) => (
+        <motion.div
+          key={i}
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: "100%", opacity: 1 }}
+          transition={{ duration: 0.8, delay: i * 0.2 }}
+          className="h-1 bg-[#1a1a2e] rounded-full overflow-hidden"
+        >
+          <motion.div 
+            animate={{ x: ["-100%", "100%"] }}
+            transition={{ duration: 2, repeat: Infinity, delay: i * 0.1 }}
+            className="w-1/3 h-full bg-[#7c3aed]" 
+          />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function Step2Illustration() {
+  return (
+    <div className="relative size-32">
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-0 border-2 border-dashed border-[#1a1a2e] rounded-full"
+      />
+      <motion.div
+        animate={{ rotate: -360 }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-4 border-2 border-[#7c3aed]/20 rounded-full flex items-center justify-center"
+      >
+        <div className="size-2 bg-[#7c3aed] rounded-full shadow-[0_0_10px_#7c3aed]" />
+      </motion.div>
+    </div>
+  );
+}
+
+function Step3Illustration() {
+  const text = "SupportMind is thinking...";
+  return (
+    <div className="font-mono text-sm text-[#7c3aed] flex items-center gap-1">
+      {text.split("").map((char, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.1, delay: i * 0.05, repeat: Infinity, repeatDelay: 2 }}
+        >
+          {char}
+        </motion.span>
+      ))}
+      <motion.span 
+        animate={{ opacity: [0, 1, 0] }} 
+        transition={{ duration: 0.8, repeat: Infinity }}
+        className="w-2 h-4 bg-[#7c3aed]" 
+      />
+    </div>
   );
 }

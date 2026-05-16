@@ -51,7 +51,7 @@ export default function AnalyticsPage() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600">Performance Analytics</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#F0EEE9]">Performance Analytics</h1>
           <p className="text-muted-foreground">Real-time monitoring of your AI assistant and knowledge base</p>
         </motion.div>
       </header>
