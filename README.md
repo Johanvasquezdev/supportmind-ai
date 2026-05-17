@@ -34,7 +34,7 @@ SupportMind AI ofrece un **asistente de soporte impulsado por IA** que:
 
 ---
 
-## 👁️ Visión general de la arquitectura
+##  Visión general de la arquitectura
 
 Frontend (Next.js)
 ↓
