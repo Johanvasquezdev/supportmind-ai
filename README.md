@@ -51,7 +51,7 @@ PostgreSQL → Usuarios, Empresas, Tickets, Historial
 
 ---
 
-## 🧩 Funcionalidades principales
+##  Funcionalidades principales
 
 - Autenticación (JWT)
 - Arquitectura multi-tenant (B2B)
@@ -64,7 +64,7 @@ PostgreSQL → Usuarios, Empresas, Tickets, Historial
 
 ---
 
-## 🛠️ Stack Tecnológico
+##  Stack Tecnológico
 
 ### Frontend
 - Next.js
