@@ -1,8 +1,5 @@
-# supportmind-ai
-B2B SaaS – AI-powered support assistant 
 
-
-# SupportMind AI 🆘🧠
+# SupportMind AI 
 
 **SupportMind AI** es una **plataforma B2B SaaS impulsada por Inteligencia Artificial**, diseñada para ayudar a las empresas a **automatizar y optimizar sus procesos de soporte al cliente** utilizando técnicas modernas de IA como **LLMs, RAG (Retrieval-Augmented Generation)** y una **arquitectura backend escalable**.
 
@@ -10,7 +7,7 @@ Este proyecto está construido como un **SaaS real**, no como un demo ni un clon
 
 ---
 
-## 🧠 Problema
+##  Problema
 
 Los equipos de soporte dedican una gran cantidad de tiempo a:
 - Responder preguntas repetitivas
@@ -25,7 +22,7 @@ Esto provoca:
 
 ---
 
-## ✅ Solución
+##  Solución
 
 SupportMind AI ofrece un **asistente de soporte impulsado por IA** que:
 
@@ -56,14 +53,14 @@ PostgreSQL → Usuarios, Empresas, Tickets, Historial
 
 ## 🧩 Funcionalidades principales
 
-- 🔐 Autenticación (JWT)
-- 🏢 Arquitectura multi-tenant (B2B)
-- 🤖 Respuestas automáticas con IA
-- 📄 Carga de documentos y embeddings (RAG)
-- 💬 Historial de conversaciones
-- 📊 Control de uso y rate limiting
-- 🐳 Aplicación dockerizada
-- 🔄 CI/CD con GitHub Actions
+- Autenticación (JWT)
+- Arquitectura multi-tenant (B2B)
+- Respuestas automáticas con IA
+- Carga de documentos y embeddings (RAG)
+- Historial de conversaciones
+- Control de uso y rate limiting
+- Aplicación dockerizada
+- CI/CD con GitHub Actions
 
 ---
 
@@ -92,7 +89,7 @@ PostgreSQL → Usuarios, Empresas, Tickets, Historial
 
 ---
 
-## 🧠 Diseño del Wrapper de IA
+##  Diseño del Wrapper de IA
 
 SupportMind AI **no es solo un chatbot**.
 
@@ -108,27 +105,8 @@ Ejemplo de prompt del sistema:
 
 ---
 
-## 📅 Plan de desarrollo del MVP (14 días)
 
-### Semana 1
-- Configuración del proyecto y repositorio
-- Backend API + autenticación
-- Modelos de base de datos (usuarios y empresas)
-- Integración con OpenAI
-- Interfaz básica de chat (frontend)
-
-### Semana 2
-- Carga de documentos y embeddings
-- Implementación de RAG
-- Rate limiting y logging
-- Dockerización
-- Pipeline CI/CD
-- Deploy en la nube
-- Documentación y demo
-
----
-
-## 🎯 Usuarios objetivo
+##  Usuarios objetivo
 
 - Empresas SaaS
 - Startups
@@ -137,7 +115,7 @@ Ejemplo de prompt del sistema:
 
 ---
 
-## 📈 Por qué este proyecto es importante
+##  Por qué este proyecto es importante
 
 Este proyecto demuestra:
 - Arquitectura real de un SaaS B2B
@@ -150,7 +128,7 @@ Está diseñado como un **proyecto de portafolio profesional**, ideal para roles
 
 ---
 
-## 🚀 Roadmap
+##  Roadmap
 
 - Sistema de pagos y suscripciones
 - Panel de administración
@@ -160,7 +138,7 @@ Está diseñado como un **proyecto de portafolio profesional**, ideal para roles
 
 ---
 
-## 👤 Autor
+## Autor
 
 **Johan Gabriel Vásquez Camacho**  
 Estudiante de Desarrollo de Software 
