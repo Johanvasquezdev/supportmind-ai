@@ -1,7 +1,7 @@
 
 # SupportMind AI 
 
-**SupportMind AI** es una **plataforma B2B SaaS impulsada por Inteligencia Artificial**, diseñada para ayudar a las empresas a **automatizar y optimizar sus procesos de soporte al cliente** utilizando técnicas modernas de IA como **LLMs, RAG (Retrieval-Augmented Generation)** y una **arquitectura backend escalable**.
+**SupportMind AI** es una **plataforma SaaS impulsada por Inteligencia Artificial**, diseñada para ayudar a las empresas a **automatizar y optimizar sus procesos de soporte al cliente** utilizando técnicas modernas de IA como **LLMs, RAG (Retrieval-Augmented Generation)** y una **arquitectura backend escalable**.
 
 Este proyecto está construido como un **SaaS real**, no como un demo ni un clon de agentes como ChatGPT, Claude, Gemini, etc siguiendo buenas prácticas de **arquitectura de software, DevOps e integración de IA**.
 
